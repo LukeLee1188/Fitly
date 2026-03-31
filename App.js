@@ -4,7 +4,7 @@ import {
   SafeAreaView, ScrollView, Alert, ActivityIndicator, Platform 
 } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/tabs';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, User, CheckCircle2, Trophy, Info, Flame } from 'lucide-react-native';
 
 // FIREBASE ENGINE
@@ -24,7 +24,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const Tab = createBottomTabNavigator();
 
-// --- LOADING COMPONENT ---
 function LoadingScreen() {
   return (
     <View style={[styles.container, styles.center]}>
@@ -34,24 +33,36 @@ function LoadingScreen() {
   );
 }
 
-// --- CHALLENGE SCREEN ---
+// --- LOADING COMPONENT ---
 function ChallengeScreen() {
   const [exercise, setExercise] = useState({ name: "Goal", reps: "0", description: "" });
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [today, setToday] = useState(new Date().toLocaleDateString());
+  const [today] = useState(new Date().toLocaleDateString());
 
   const isDoneToday = history.includes(today);
 
   useEffect(() => {
+    const exerciseNames = [
+      "Arm Circles", "Burpee", "Buttkick", "Calf Raises", "Crunch", 
+      "Deadbugs", "Dips", "Glute Bridge", "High Knees", "Jogging", 
+      "Karaoke", "Leg Raises", "Leg Swings", "Lunges", "Open and Close Gates", 
+      "Pushups", "Quad Pull", "Russian Twists", "Scoops", "Seated Leg Lifts", 
+      "Shadow Boxing", "Shoulder Shrugs", "Side Lunges", "Side Shuffles", 
+      "Squats", "Standing March", "Standing On One Leg", "Superman", "Walking"
+    ];
+
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 0);
     const diff = now - start;
-    const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const exerciseIndex = (dayOfYear % 30) + 1;
+    const dayOfYear = Math.floor(diff / 86400000);
+    const selectedName = exerciseNames[dayOfYear % exerciseNames.length] || "Arm Circles";
 
-    const unsubTask = onSnapshot(doc(db, "library", exerciseIndex.toString()), (snap) => {
+    const unsubTask = onSnapshot(doc(db, "exercises", selectedName), (snap) => {
       if (snap.exists()) setExercise(snap.data());
+      setLoading(false);
+    }, (error) => {
+      console.error("Firebase Error:", error);
       setLoading(false);
     });
 
@@ -60,27 +71,17 @@ function ChallengeScreen() {
     });
 
     return () => { unsubTask(); unsubUser(); };
-  }, [today]);
+  }, []); 
 
   const handleDone = async () => {
-    if (isDoneToday) return;
-
-    const userConfirmed = Platform.OS === 'web' 
-      ? window.confirm("Safety Check: Are you physically capable of this exercise?")
-      : true;
-
-    if (!userConfirmed) return;
-
     try {
       const userRef = doc(db, "users", "test_user");
       await setDoc(userRef, { 
         history: arrayUnion(today),
         lastCompletedAt: new Date().toISOString() 
       }, { merge: true });
-      if (Platform.OS !== 'web') Alert.alert("Boom!", "Daily challenge crushed.");
     } catch (e) {
-      console.error("Firebase Error:", e);
-      Alert.alert("Error", "Could not save progress.");
+      console.error(e);
     }
   };
 
@@ -92,27 +93,31 @@ function ChallengeScreen() {
         <View style={styles.header}>
           <Text style={styles.label}>TODAY'S GLOBAL CHALLENGE</Text>
           <View style={styles.streakBadge}>
-            <Flame color="#FF9500" size={16} fill="#FF9500" />
-            <Text style={styles.streakText}>{history.length}</Text>
+            <Text style={{fontSize: 16}}>🔥 </Text>
+            <Text style={styles.streakText}>{history?.length || 0}</Text>
           </View>
         </View>
         
         {isDoneToday ? (
           <View style={styles.center}>
-            <Trophy color="#FFCC00" size={120} strokeWidth={1} />
+            <Text style={{fontSize: 80, marginBottom: 20}}>🏆</Text>
             <Text style={styles.titleText}>You're All Set!</Text>
             <Text style={styles.subText}>New challenge drops at midnight.</Text>
           </View>
         ) : (
           <View style={styles.center}>
-            <Text style={styles.task}>{exercise.reps} {exercise.name}</Text>
+            <Text style={styles.task}>
+              {exercise?.reps || "0"} {exercise?.name || "Exercise"}
+            </Text>
             <View style={styles.descriptionBox}>
-              <Info color="#8E8E93" size={18} style={{marginBottom: 8}} />
-              <Text style={styles.descriptionText}>{exercise.description}</Text>
+              <Text style={{fontSize: 18, marginBottom: 8}}>ℹ️</Text>
+              <Text style={styles.descriptionText}>
+                {exercise?.description || "No description available."}
+              </Text>
             </View>
             <TouchableOpacity style={styles.btn} onPress={handleDone}>
               <View style={styles.btnContent}>
-                <CheckCircle2 color="white" size={24} style={{marginRight: 12}} />
+                <Text style={{fontSize: 20, color: 'white', marginRight: 10}}>✅</Text>
                 <Text style={styles.btnText}>Mark as Done</Text>
               </View>
             </TouchableOpacity>
