@@ -6,11 +6,15 @@ import {
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, User, CheckCircle2, Trophy, Info, Flame } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 
 // FIREBASE ENGINE
+// 1. Imports (Only one from each location)
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc, arrayUnion } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"; // ONLY ONE OF THESE
 
+// 2. Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyA6NYMuK3mUsSq2lqdDbQe-wXs-JADflLk",
   authDomain: "least-common-multiple.firebaseapp.com",
@@ -20,8 +24,11 @@ const firebaseConfig = {
   appId: "1:889087754267:web:cd090f9fd0ca2e1fec78be"
 };
 
+// 3. Initialize Engines (Use 'db' and 'storage' as names)
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);// Make sure this is 'storage', NOT 'getStorage'
+
 const Tab = createBottomTabNavigator();
 
 function LoadingScreen() {
@@ -74,16 +81,56 @@ function ChallengeScreen() {
   }, []); 
 
   const handleDone = async () => {
-    try {
-      const userRef = doc(db, "users", "test_user");
-      await setDoc(userRef, { 
-        history: arrayUnion(today),
-        lastCompletedAt: new Date().toISOString() 
-      }, { merge: true });
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  if (isDoneToday) return;
+
+  // 1. Request Camera Permissions
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert("Permission Denied", "We need camera access to verify your workout!");
+    return;
+  }
+
+  // 2. Launch the Camera
+  const result = await ImagePicker.launchCameraAsync({
+    allowsEditing: true,
+    aspect: [1, 1], // Square photos look best in the profile feed
+    quality: 0.3,   // Keep quality low to save your Firebase Storage quota!
+  });
+
+  if (result.canceled) return;
+
+  try {
+    setLoading(true);
+    const imageUri = result.assets[0].uri;
+
+    // 3. Convert Image to Blob (Firebase needs this format)
+    const response = await fetch(imageUri);
+    const blob = await response.blob();
+
+    // 4. Upload to Firebase Storage
+    // We name the file based on the user and date: proofs/test_user/2026-03-31.jpg
+    const fileRef = ref(storage, `proofs/test_user/${today.replace(/\//g, '-')}.jpg`);
+    await uploadBytes(fileRef, blob);
+    
+    // 5. Get the permanent URL for the photo
+    const photoUrl = await getDownloadURL(fileRef);
+
+    // 6. Update Firestore history with the link to the proof
+    const userRef = doc(db, "users", "test_user");
+    await setDoc(userRef, { 
+      history: arrayUnion(today),
+      lastProofUrl: photoUrl,
+      lastCompletedAt: new Date().toISOString() 
+    }, { merge: true });
+
+    Alert.alert("Verified!", "Workout saved with photo proof.");
+  } catch (e) {
+    console.error("Upload Error:", e);
+    Alert.alert("Error", "Failed to upload proof. Check your connection.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (loading) return <LoadingScreen />;
 
