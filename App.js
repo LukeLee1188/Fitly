@@ -5,11 +5,13 @@ import {
 } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, User, CheckCircle2, Trophy, Info, Flame } from 'lucide-react-native';
+import { Home, User, CheckCircle2, Trophy, Info, Flame, Camera } from 'lucide-react-native';
 
 // FIREBASE ENGINE
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, onSnapshot, setDoc, arrayUnion } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot, setDoc, arrayUnion, collection, query, orderBy, limit } from "firebase/firestore";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // 2. Firebase Config
 const firebaseConfig = {
@@ -24,6 +26,7 @@ const firebaseConfig = {
 // 3. Initialize Engines (Use 'db' and 'storage' as names)
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);      // <--- THIS IS THE MISSING LINE
 const Tab = createBottomTabNavigator();
 
 // Custom Alert that works on Web and Mobile
