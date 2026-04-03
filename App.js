@@ -8,6 +8,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, User, CheckCircle2, Trophy, Info, Flame, Camera } from 'lucide-react-native';
 
 // FIREBASE ENGINE
+import * as ImagePicker from 'expo-image-picker';
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc, arrayUnion, collection, query, orderBy, limit } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
@@ -99,14 +100,46 @@ function ChallengeScreen() {
   }, [userId]);
 
   const handleDone = async () => {
+    // 1. Get Camera Permissions
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      showAlert("Permission Denied", "Camera access is needed to verify workouts.");
+      return;
+    }
+
+    // 2. Open Camera
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.3,
+    });
+
+    if (result.canceled) return;
+
     try {
-      const userRef = doc(db, "users", "test_user");
+      setLoading(true);
+      const response = await fetch(result.assets[0].uri);
+      const blob = await response.blob();
+      
+      // 3. Upload Proof to Storage (Using the real userId)
+      const fileRef = ref(storage, `proofs/${userId}/${today.replace(/\//g, '-')}.jpg`);
+      await uploadBytes(fileRef, blob);
+      const photoUrl = await getDownloadURL(fileRef);
+
+      // 4. Update Firestore: Use userId instead of "test_user"
+      const userRef = doc(db, "users", userId);
       await setDoc(userRef, { 
         history: arrayUnion(today),
-        lastCompletedAt: new Date().toISOString() 
+        xp: (userData.xp || 0) + 50, // This makes you move up the leaderboard!
+        lastProofUrl: photoUrl 
       }, { merge: true });
+
+      showAlert("Success!", "Workout verified and 50 XP earned!");
     } catch (e) {
       console.error(e);
+      showAlert("Error", "Failed to upload proof.");
+    } finally {
+      setLoading(false);
     }
   };
 
