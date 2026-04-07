@@ -63,13 +63,12 @@ To get started, create an account with a unique email and password. The home scr
    npx expo start -c
 ```
 
-2. Run on your preferred target:
+2. Run on your preferred service:
    - **Physical device**: Scan the QR code in the terminal with the Expo Go app
    - **Web**: Press the link in the terminal
 
 3. When opened, tap **Create Account** and register with your email and password.
 
-4. The **Challenge** tab displays the day's exercise. Tap **Submit Proof** once 
-   complete, you will be directed to a screen that says 'Task Completed', and your streak and XP update automatically.
+4. The **Challenge** tab displays the day's exercise. Tap **Submit Proof** to upload. Once complete, you will be directed to a screen that says 'Task Completed', and your streak and XP update automatically.
 
-5. Visit the **Profile** tab to view or edit your display name and bio.
+5. Visit the **Profile** tab to view or edit your display name, bio, and streak.
