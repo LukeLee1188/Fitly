@@ -84,11 +84,31 @@ function ChallengeScreen() {
 
   useEffect(() => {
     if (!userId) return;
-    const exerciseNames = ["Pushups", "Squats", "Burpees", "Plank", "Lunges"];
-    const selectedName = exerciseNames[new Date().getDate() % exerciseNames.length];
+
+    // Bring back the full list to match your database
+    const exerciseNames = [
+      "Arm Circles", "Burpee", "Buttkick", "Calf Raises", "Crunch", 
+      "Deadbugs", "Dips", "Glute Bridge", "High Knees", "Jogging", 
+      "Karaoke", "Leg Raises", "Leg Swings", "Lunges", "Open and Close Gates", 
+      "Pushups", "Quad Pull", "Russian Twists", "Scoops", "Seated Leg Lifts", 
+      "Shadow Boxing", "Shoulder Shrugs", "Side Lunges", "Side Shuffles", 
+      "Squats", "Standing March", "Standing On One Leg", "Superman", "Walking"
+    ];
+
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const diff = now - start;
+    const dayOfYear = Math.floor(diff / 86400000);
+    const selectedName = exerciseNames[dayOfYear % exerciseNames.length] || "Pushups";
     
+    console.log("Fetching challenge for today:", selectedName);
+
     const unsubEx = onSnapshot(doc(db, "exercises", selectedName), (snap) => {
-      if (snap.exists()) setExercise(snap.data());
+      if (snap.exists()) {
+        setExercise(snap.data());
+      } else {
+        console.warn(`Missing Document: Create "${selectedName}" in your exercises collection!`);
+      }
       setLoading(false);
     });
 

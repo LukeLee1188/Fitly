@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "least-common-multiple",
+    "slug": "least-common-multiple",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.anonymous.leastcommonmultiple"
+    },
+    "web": {
+      "favicon": "./favicon.png"
+    },
+    "sdkVersion": "54.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "52b09a96-62ee-4a22-b98e-b82d693982aa"
+      }
+    }
+  }
+}
