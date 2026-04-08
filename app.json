@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Fitly",
+    "slug": "least-common-multiple",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lukelee.fitly",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Fitly needs camera access to verify your daily workouts."
+      }
+    },
+    "android": {
+      "package": "com.lukelee.fitly",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./favicon.png"
+    },
+    "sdkVersion": "54.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "52b09a96-62ee-4a22-b98e-b82d693982aa"
+      }
+    },
+    "owner": "chickenboi1188"
+  }
+}
