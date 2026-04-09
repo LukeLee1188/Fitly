@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, User, CheckCircle2, Trophy, Info, Flame, Camera } from 'lucide-react-native';
+import { Home, User, Trophy, Flame, Camera } from 'lucide-react-native';
 
 // FIREBASE ENGINE
 import * as ImagePicker from 'expo-image-picker';
@@ -14,7 +14,6 @@ import { getFirestore, doc, onSnapshot, setDoc, arrayUnion, collection, query, o
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-// 2. Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyA6NYMuK3mUsSq2lqdDbQe-wXs-JADflLk",
   authDomain: "least-common-multiple.firebaseapp.com",
@@ -24,13 +23,13 @@ const firebaseConfig = {
   appId: "1:889087754267:web:cd090f9fd0ca2e1fec78be"
 };
 
-// 3. Initialize Engines (Use 'db' and 'storage' as names)
+// Initialize Engines in correct order
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);      // <--- THIS IS THE MISSING LINE
+const auth = getAuth(app); 
+const storage = getStorage(app);
 const Tab = createBottomTabNavigator();
 
-// Custom Alert that works on Web and Mobile
 const showAlert = (title, message) => {
   if (Platform.OS === 'web') {
     window.alert(`${title}: ${message}`);
@@ -51,7 +50,7 @@ function AuthScreen() {
       if (isRegistering) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, "users", userCredential.user.uid), {
-          email: email, history: [], xp: 0, bio: 'New Athlete', displayName: email.split('@')[0]
+          email: email, history: [], xp: 0, streak: 0, bio: 'New Athlete', displayName: email.split('@')[0]
         });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
@@ -74,10 +73,10 @@ function AuthScreen() {
   );
 }
 
-// --- 2. CHALLENGE SCREEN (WITH MEDIA UPLOAD) ---
+// --- 2. CHALLENGE SCREEN ---
 function ChallengeScreen() {
   const [exercise, setExercise] = useState(null);
-  const [userData, setUserData] = useState({ history: [], xp: 0 });
+  const [userData, setUserData] = useState({ history: [], xp: 0, streak: 0 });
   const [loading, setLoading] = useState(true);
   const today = new Date().toLocaleDateString();
   const userId = auth.currentUser?.uid;
@@ -85,7 +84,6 @@ function ChallengeScreen() {
   useEffect(() => {
     if (!userId) return;
 
-    // Bring back the full list to match your database
     const exerciseNames = [
       "Arm Circles", "Burpee", "Buttkick", "Calf Raises", "Crunch", 
       "Deadbugs", "Dips", "Glute Bridge", "High Knees", "Jogging", 
@@ -97,18 +95,11 @@ function ChallengeScreen() {
 
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 0);
-    const diff = now - start;
-    const dayOfYear = Math.floor(diff / 86400000);
+    const dayOfYear = Math.floor((now - start) / 86400000);
     const selectedName = exerciseNames[dayOfYear % exerciseNames.length] || "Pushups";
     
-    console.log("Fetching challenge for today:", selectedName);
-
     const unsubEx = onSnapshot(doc(db, "exercises", selectedName), (snap) => {
-      if (snap.exists()) {
-        setExercise(snap.data());
-      } else {
-        console.warn(`Missing Document: Create "${selectedName}" in your exercises collection!`);
-      }
+      if (snap.exists()) setExercise(snap.data());
       setLoading(false);
     });
 
@@ -120,41 +111,41 @@ function ChallengeScreen() {
   }, [userId]);
 
   const handleDone = async () => {
-    // 1. Get Camera Permissions
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      showAlert("Permission Denied", "Camera access is needed to verify workouts.");
-      return;
-    }
-
-    // 2. Open Camera
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.3,
-    });
-
-    if (result.canceled) return;
-
     try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        showAlert("Permission Denied", "Camera access is needed.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.3,
+      });
+
+      if (result.canceled) return;
       setLoading(true);
+
       const response = await fetch(result.assets[0].uri);
       const blob = await response.blob();
       
-      // 3. Upload Proof to Storage (Using the real userId)
       const fileRef = ref(storage, `proofs/${userId}/${today.replace(/\//g, '-')}.jpg`);
       await uploadBytes(fileRef, blob);
       const photoUrl = await getDownloadURL(fileRef);
 
-      // 4. Update Firestore: Use userId instead of "test_user"
       const userRef = doc(db, "users", userId);
+      const currentStreak = userData.streak || 0;
+
       await setDoc(userRef, { 
         history: arrayUnion(today),
-        xp: (userData.xp || 0) + 50, // This makes you move up the leaderboard!
+        xp: (userData.xp || 0) + 50,
+        streak: currentStreak + 1,
         lastProofUrl: photoUrl 
       }, { merge: true });
 
-      showAlert("Success!", "Workout verified and 50 XP earned!");
+      showAlert("Success!", "Workout verified and Streak updated!");
     } catch (e) {
       console.error(e);
       showAlert("Error", "Failed to upload proof.");
@@ -173,11 +164,11 @@ function ChallengeScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.sectionLabel}>DAILY CHALLENGE</Text>
           <View style={styles.streakBadge}>
-            <Flame color="#FF9500" size={16} /><Text style={styles.streakText}>{userData.history?.length || 0}</Text>
+            <Flame color="#FF9500" size={16} /><Text style={styles.streakText}>{userData.streak || 0}</Text>
           </View>
         </View>
         <View style={styles.center}>
-          <Text style={styles.taskTitle}>{isDone ? "🏆 Verified" : `${exercise?.reps || "20"} ${exercise?.name || "Reps"}`}</Text>
+          <Text style={styles.taskTitle}>{isDone ? "🏆 Completed!!!" : `${exercise?.reps || "20"} ${exercise?.name || "Reps"}`}</Text>
           {!isDone && (
             <TouchableOpacity style={styles.btn} onPress={handleDone}>
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -195,8 +186,9 @@ function ChallengeScreen() {
 // --- 3. LEADERBOARD ---
 function LeaderboardScreen() {
   const [users, setUsers] = useState([]);
+  
   useEffect(() => {
-    const q = query(collection(db, "users"), orderBy("xp", "desc"), limit(10));
+    const q = query(collection(db, "users"), orderBy("streak", "desc"), limit(10));
     return onSnapshot(q, (snap) => {
       setUsers(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
@@ -205,15 +197,21 @@ function LeaderboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.main}>
-        <Text style={styles.sectionLabel}>LEADERBOARD</Text>
+        <Text style={styles.sectionLabel}>Leader Board</Text>
         <FlatList
           data={users}
           keyExtractor={item => item.id}
           renderItem={({item, index}) => (
             <View style={styles.leaderboardRow}>
               <Text style={styles.rankText}>{index + 1}</Text>
-              <Text style={styles.userNameText}>{item.displayName}</Text>
-              <Text style={styles.xpText}>{item.xp} XP</Text>
+              <View style={{flex: 1}}>
+                <Text style={styles.userNameText}>{item.displayName || "Athlete"}</Text>
+                <Text style={{fontSize: 12, color: '#8E8E93'}}>{item.xp || 0} Total XP</Text>
+              </View>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <Flame color="#FF9500" size={16} />
+                <Text style={styles.streakVal}> {item.streak || 0}</Text>
+              </View>
             </View>
           )}
         />
@@ -267,8 +265,8 @@ function ProfileScreen() {
             <Text style={styles.profileName}>{userData.displayName}</Text>
             <Text style={styles.bioText}>{userData.bio}</Text>
             <View style={styles.statsContainer}>
-              <View style={styles.statItem}><Text style={styles.statValue}>{userData.history?.length || 0}</Text><Text style={styles.statLabel}>Streak</Text></View>
-              <View style={[styles.statItem, {backgroundColor: '#5856D6'}]}><Text style={[styles.statValue, {color: 'white'}]}>{userData.xp}</Text><Text style={[styles.statLabel, {color: '#DDD'}]}>XP</Text></View>
+              <View style={styles.statItem}><Text style={styles.statValue}>{userData.streak || 0}</Text><Text style={styles.statLabel}>Streak</Text></View>
+              <View style={[styles.statItem, {backgroundColor: '#5856D6'}]}><Text style={[styles.statValue, {color: 'white'}]}>{userData.xp || 0}</Text><Text style={[styles.statLabel, {color: '#DDD'}]}>XP</Text></View>
             </View>
             <TouchableOpacity style={[styles.btn, {backgroundColor: '#8E8E93', marginTop: 20}]} onPress={() => setIsEditing(true)}>
               <Text style={styles.btnText}>Edit Profile</Text>
@@ -282,6 +280,7 @@ function ProfileScreen() {
     </SafeAreaView>
   );
 }
+
 
 // --- 5. NAVIGATION ---
 export default function App() {
@@ -324,7 +323,7 @@ const styles = StyleSheet.create({
   logoutBtn: { backgroundColor: '#FF3B30', paddingVertical: 15, borderRadius: 15, width: '100%', alignItems: 'center', marginTop: 10 },
   leaderboardRow: { flexDirection: 'row', backgroundColor: 'white', padding: 15, borderRadius: 15, marginBottom: 10, alignItems: 'center' },
   rankText: { fontSize: 18, fontWeight: 'bold', color: '#007AFF', width: 35 },
-  userNameText: { flex: 1, fontSize: 16, fontWeight: '600' },
-  xpText: { fontWeight: 'bold', color: '#5856D6' },
+  userNameText: { fontSize: 16, fontWeight: '600' },
+  streakVal: { fontWeight: 'bold', color: '#FF9500', fontSize: 18 },
   scrollContent: { alignItems: 'center', paddingBottom: 30 }
 });
