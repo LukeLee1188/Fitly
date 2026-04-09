@@ -5,12 +5,10 @@ import {
 } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, User, CheckCircle2, Trophy, Info, Flame, Camera } from 'lucide-react-native';
+import { Home, User, Trophy, Flame, Camera } from 'lucide-react-native';
 
 // FIREBASE ENGINE
 import * as ImagePicker from 'expo-image-picker';
-
-// --- FIREBASE ENGINE ---
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc, arrayUnion, collection, query, orderBy, limit } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
@@ -25,10 +23,11 @@ const firebaseConfig = {
   appId: "1:889087754267:web:cd090f9fd0ca2e1fec78be"
 };
 
-// 3. Initialize Engines (Use 'db' and 'storage' as names)
+// Initialize Engines in correct order
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);      // <--- THIS IS THE MISSING LINE
+const auth = getAuth(app); 
+const storage = getStorage(app);
 const Tab = createBottomTabNavigator();
 
 const showAlert = (title, message) => {
@@ -50,7 +49,6 @@ function AuthScreen() {
     try {
       if (isRegistering) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        // ADDED: initializing 'streak' at 0 for new users
         await setDoc(doc(db, "users", userCredential.user.uid), {
           email: email, history: [], xp: 0, streak: 0, bio: 'New Athlete', displayName: email.split('@')[0]
         });
@@ -113,41 +111,41 @@ function ChallengeScreen() {
   }, [userId]);
 
   const handleDone = async () => {
-    // 1. Get Camera Permissions
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      showAlert("Permission Denied", "Camera access is needed to verify workouts.");
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        showAlert("Permission Denied", "Camera access is needed.");
+        return;
+      }
 
-    // 2. Open Camera
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.3,
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.3,
+      });
 
       if (result.canceled) return;
       setLoading(true);
 
-      const uri = result.assets[0].uri;
-      const response = await fetch(uri);
+      const response = await fetch(result.assets[0].uri);
       const blob = await response.blob();
       
-      // 3. Upload Proof to Storage (Using the real userId)
       const fileRef = ref(storage, `proofs/${userId}/${today.replace(/\//g, '-')}.jpg`);
       await uploadBytes(fileRef, blob);
       const photoUrl = await getDownloadURL(fileRef);
 
-      // 4. Update Firestore: Use userId instead of "test_user"
       const userRef = doc(db, "users", userId);
+      const currentStreak = userData.streak || 0;
+
       await setDoc(userRef, { 
         history: arrayUnion(today),
-        xp: (userData.xp || 0) + 50, // This makes you move up the leaderboard!
+        xp: (userData.xp || 0) + 50,
+        streak: currentStreak + 1,
         lastProofUrl: photoUrl 
       }, { merge: true });
 
-      showAlert("Success!", "Workout verified and 50 XP earned!");
+      showAlert("Success!", "Workout verified and Streak updated!");
     } catch (e) {
       console.error(e);
       showAlert("Error", "Failed to upload proof.");
@@ -170,7 +168,7 @@ function ChallengeScreen() {
           </View>
         </View>
         <View style={styles.center}>
-          <Text style={styles.taskTitle}>{isDone ? "🏆 Verified" : `${exercise?.reps || "20"} ${exercise?.name || "Reps"}`}</Text>
+          <Text style={styles.taskTitle}>{isDone ? "🏆 Completed!!!" : `${exercise?.reps || "20"} ${exercise?.name || "Reps"}`}</Text>
           {!isDone && (
             <TouchableOpacity style={styles.btn} onPress={handleDone}>
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -185,12 +183,11 @@ function ChallengeScreen() {
   );
 }
 
-// --- 3. LEADERBOARD (NOW BY STREAK) ---
+// --- 3. LEADERBOARD ---
 function LeaderboardScreen() {
   const [users, setUsers] = useState([]);
   
   useEffect(() => {
-    // UPDATED: Querying by streak instead of xp
     const q = query(collection(db, "users"), orderBy("streak", "desc"), limit(10));
     return onSnapshot(q, (snap) => {
       setUsers(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -200,7 +197,7 @@ function LeaderboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.main}>
-        <Text style={styles.sectionLabel}>STREAK LEADERS</Text>
+        <Text style={styles.sectionLabel}>Leader Board</Text>
         <FlatList
           data={users}
           keyExtractor={item => item.id}
@@ -283,6 +280,7 @@ function ProfileScreen() {
     </SafeAreaView>
   );
 }
+
 
 // --- 5. NAVIGATION ---
 export default function App() {
