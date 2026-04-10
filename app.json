@@ -14,16 +14,6 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "kotlinVersion": "2.0.21"
-          }
-        }
-      ]
-    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.lukelee.fitly",
@@ -52,6 +42,7 @@
       "eas": {
         "projectId": "52b09a96-62ee-4a22-b98e-b82d693982aa"
       }
-    }
+    },
+    "owner": "chickenboi1188"
   }
 }

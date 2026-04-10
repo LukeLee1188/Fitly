@@ -6,7 +6,7 @@
   "build": {
     "development": {
       "node": "20.19.4",
-      "image": "ubuntu-22.04-jdk-17-ndk-r26b",
+      "developmentClient": true,
       "distribution": "internal",
       "android": {
         "buildType": "apk"
@@ -14,7 +14,6 @@
     },
     "preview": {
       "node": "20.19.4",
-      "image": "ubuntu-22.04-jdk-17-ndk-r26b",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
@@ -22,7 +21,6 @@
     },
     "production": {
       "node": "20.19.4",
-      "image": "ubuntu-22.04-jdk-17-ndk-r26b",
       "autoIncrement": true
     }
   },

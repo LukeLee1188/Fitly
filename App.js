@@ -111,48 +111,54 @@ function ChallengeScreen() {
   }, [userId]);
 
   const handleDone = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        showAlert("Permission Denied", "Camera access is needed.");
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.3,
-      });
-
-      if (result.canceled) return;
-      setLoading(true);
-
-      const response = await fetch(result.assets[0].uri);
-      const blob = await response.blob();
-      
-      const fileRef = ref(storage, `proofs/${userId}/${today.replace(/\//g, '-')}.jpg`);
-      await uploadBytes(fileRef, blob);
-      const photoUrl = await getDownloadURL(fileRef);
-
-      const userRef = doc(db, "users", userId);
-      const currentStreak = userData.streak || 0;
-
-      await setDoc(userRef, { 
-        history: arrayUnion(today),
-        xp: (userData.xp || 0) + 50,
-        streak: currentStreak + 1,
-        lastProofUrl: photoUrl 
-      }, { merge: true });
-
-      showAlert("Success!", "Workout verified and Streak updated!");
-    } catch (e) {
-      console.error(e);
-      showAlert("Error", "Failed to upload proof.");
-    } finally {
-      setLoading(false);
+  try {
+    // 1. Ask for Gallery (Media Library) Permissions
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showAlert("Permission Denied", "We need access to your gallery to upload proof.");
+      return;
     }
-  };
+
+    // 2. Open the Gallery
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'], // Allows users to pick either
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.3,
+    });
+
+    if (result.canceled) return;
+    setLoading(true);
+
+    // 3. Handle the File
+    const asset = result.assets[0];
+    const fileExtension = asset.type === 'video' ? 'mp4' : 'jpg';
+    const response = await fetch(asset.uri);
+    const blob = await response.blob();
+    
+    // 4. Upload to Firebase
+    const fileRef = ref(storage, `proofs/${userId}/${today.replace(/\//g, '-')}.${fileExtension}`);
+    await uploadBytes(fileRef, blob);
+    const photoUrl = await getDownloadURL(fileRef);
+
+    // 5. Update Firestore
+    const userRef = doc(db, "users", userId);
+    await setDoc(userRef, { 
+      history: arrayUnion(today),
+      xp: (userData.xp || 0) + 50,
+      streak: (userData.streak || 0) + 1,
+      lastProofUrl: photoUrl 
+    }, { merge: true });
+
+    showAlert("Success!", "Video proof uploaded and streak updated!");
+  } catch (e) {
+    console.error(e);
+    showAlert("Error", "Upload failed. Check your internet connection.");
+  } finally {
+    setLoading(true); // Keep loading true while Firebase finishes
+    setLoading(false);
+  }
+};
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#007AFF" /></View>;
 
