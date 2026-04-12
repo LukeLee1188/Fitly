@@ -14,31 +14,28 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "plugins": [
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Allow Fitly to access your gallery to upload workout proof."
-        }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "kotlinVersion": "2.0.21"
-          }
-        }
-      ],
-      "./delete-compression-plugin.js"
-    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lukelee.fitly",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Fitly needs camera access to verify your daily workouts."
+      }
+    },
     "android": {
       "package": "com.lukelee.fitly",
       "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./icon.png",
+        "backgroundColor": "#ffffff"
+      },
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ]
+    },
+    "web": {
+      "favicon": "./favicon.png"
     },
     "sdkVersion": "54.0.0",
     "extra": {
