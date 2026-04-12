@@ -6,8 +6,10 @@
   "build": {
     "development": {
       "node": "20.19.4",
-      "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "EXPO_NO_BUNDLE_COMPRESSION": "1"
+      },
       "android": {
         "buildType": "apk"
       }

@@ -14,6 +14,23 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Fitly to access your gallery to upload workout proof."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.0.21"
+          }
+        }
+      ],
+      "./delete-compression-plugin.js"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.lukelee.fitly",
