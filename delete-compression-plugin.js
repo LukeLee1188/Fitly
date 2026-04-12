@@ -1,16 +1,13 @@
 const { withAppBuildGradle } = require('@expo/config-plugins');
 
-module.exports = function withKotlinFix(config) {
+module.exports = function withRemoveCompression(config) {
   return withAppBuildGradle(config, (config) => {
-    let contents = config.modResults.contents;
-
-    // This targets the exact property causing the "unknown property" crash
-    if (contents.includes('enableBundleCompression')) {
-      console.log("Found the ghost property! Deleting from app/build.gradle...");
-      contents = contents.replace(/enableBundleCompression\s*=\s*(true|false)/g, '// Removed for RN 0.76');
+    if (config.modResults.contents.includes('enableBundleCompression')) {
+      config.modResults.contents = config.modResults.contents.replace(
+        /enableBundleCompression\s*=\s*.*/g,
+        '// Line removed by Fitly Plugin'
+      );
     }
-
-    config.modResults.contents = contents;
     return config;
   });
 };
