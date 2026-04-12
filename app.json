@@ -25,14 +25,10 @@
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "2.0.21",
-            "extraMavenRepos": [
-              "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev"
-            ]
+            "kotlinVersion": "2.0.21"
+          }
         }
-        }
-      ],
-      "./delete-compression-plugin.js"
+      ]
     ],
     "ios": {
       "supportsTablet": true,
