@@ -24,7 +24,7 @@ Thumbs.db
 *.apk
 *.aab
 *.keystore
-android/
+# android/
 
 # iOS-specific artifacts
 *.ipa

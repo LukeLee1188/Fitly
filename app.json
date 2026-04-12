@@ -16,13 +16,16 @@
     ],
     "plugins": [
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Fitly to access your gallery to upload workout proof."
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "2.0.21",
-            "extraMavenRepos": [
-              "https://www.jitpack.io"
-            ]
+            "kotlinVersion": "2.0.21"
           }
         }
       ]
