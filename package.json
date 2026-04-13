@@ -13,11 +13,8 @@
     "@react-navigation/bottom-tabs": "6.5.11",
     "@react-navigation/native": "6.1.9",
     "expo": "~54.0.0",
-<<<<<<< HEAD
     "expo-av": "~16.0.8",
-=======
     "expo-build-properties": "~1.0.10",
->>>>>>> 0da4de093659caa24f557f089798bf25188b2286
     "expo-dev-client": "~6.0.20",
     "expo-image-picker": "~17.0.10",
     "expo-status-bar": "~2.1.0",

@@ -14,6 +14,9 @@ import { getFirestore, doc, onSnapshot, setDoc, arrayUnion, collection, query, o
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+//EXPO FOR AUDIO
+import { Audio } from 'expo-av';
+
 const firebaseConfig = {
   apiKey: "AIzaSyA6NYMuK3mUsSq2lqdDbQe-wXs-JADflLk",
   authDomain: "least-common-multiple.firebaseapp.com",
@@ -291,7 +294,40 @@ function ProfileScreen() {
 // --- 5. NAVIGATION ---
 export default function App() {
   const [user, setUser] = useState(null);
-  useEffect(() => { return onAuthStateChanged(auth, (u) => setUser(u)); }, []);
+// 1. This function handles the actual sound playing
+  async function playWelcomeSound() {
+    try {
+      // Ensure the audio mode allows playing
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true, // This allows sound even if the ringer is off
+      });
+
+      const { sound } = await Audio.Sound.createAsync(
+        require('./assets/click.wav') 
+      );
+      await sound.playAsync();
+      
+      // Automatically clean up memory after the sound plays
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.log("Audio playback failed:", error);
+    }
+  }
+ useEffect(() => { 
+    return onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      
+      // 2. Trigger the sound only when a user is successfully logged in
+      if (u) {
+        playWelcomeSound();
+      }
+    }); 
+  }, []);
+
   if (!user) return <AuthScreen />;
 
   return (
@@ -304,6 +340,7 @@ export default function App() {
     </NavigationContainer>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
