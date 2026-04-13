@@ -15,6 +15,7 @@
       "**/*"
     ],
     "plugins": [
+      "./delete-compression-plugin.js",
       [
         "expo-image-picker",
         {
