@@ -83,6 +83,8 @@ function ChallengeScreen() {
   const [loading, setLoading] = useState(true);
   const today = new Date().toLocaleDateString();
   const userId = auth.currentUser?.uid;
+  // Keep track of the current name so we can display it even if Firebase hasn't loaded custom details
+  const [currentExerciseName, setCurrentExerciseName] = useState("Pushups");
 
   useEffect(() => {
     if (!userId) return;
@@ -100,6 +102,7 @@ function ChallengeScreen() {
     const start = new Date(now.getFullYear(), 0, 0);
     const dayOfYear = Math.floor((now - start) / 86400000);
     const selectedName = exerciseNames[dayOfYear % exerciseNames.length] || "Pushups";
+    setCurrentExerciseName(selectedName);
     
     const unsubEx = onSnapshot(doc(db, "exercises", selectedName), (snap) => {
       if (snap.exists()) setExercise(snap.data());
@@ -115,16 +118,14 @@ function ChallengeScreen() {
 
   const handleDone = async () => {
   try {
-    // 1. Ask for Gallery (Media Library) Permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       showAlert("Permission Denied", "We need access to your gallery to upload proof.");
       return;
     }
 
-    // 2. Open the Gallery
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'], // Allows users to pick either
+      mediaTypes: ['images', 'videos'], 
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.3,
@@ -133,18 +134,15 @@ function ChallengeScreen() {
     if (result.canceled) return;
     setLoading(true);
 
-    // 3. Handle the File
     const asset = result.assets[0];
     const fileExtension = asset.type === 'video' ? 'mp4' : 'jpg';
     const response = await fetch(asset.uri);
     const blob = await response.blob();
     
-    // 4. Upload to Firebase
     const fileRef = ref(storage, `proofs/${userId}/${today.replace(/\//g, '-')}.${fileExtension}`);
     await uploadBytes(fileRef, blob);
     const photoUrl = await getDownloadURL(fileRef);
 
-    // 5. Update Firestore
     const userRef = doc(db, "users", userId);
     await setDoc(userRef, { 
       history: arrayUnion(today),
@@ -158,7 +156,6 @@ function ChallengeScreen() {
     console.error(e);
     showAlert("Error", "Upload failed. Check your internet connection.");
   } finally {
-    setLoading(true); // Keep loading true while Firebase finishes
     setLoading(false);
   }
 };
@@ -166,6 +163,29 @@ function ChallengeScreen() {
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#007AFF" /></View>;
 
   const isDone = userData.history?.includes(today);
+
+  // --- PROGRESSIVE OVERLOAD LOGIC (XP BASED) ---
+  // 50 XP per workout means 500 XP = 10 workouts.
+  // Multiplier increases by 1 for every 500 XP earned.
+  const xpMultiplier = Math.floor((userData.xp || 0) / 500);
+  
+  // 1. Force the Firebase string ("30") into a real math number (30)
+  const baseAmount = parseInt(exercise?.amount || 20, 10);
+  
+  // 2. You named the unit field "reps" in Firebase (e.g., "Seconds")
+  const unitType = exercise?.reps || "Reps";
+  
+  // 3. Grab the modifier text if it exists
+  const modifierText = exercise?.modifier ? ` ${exercise.modifier}` : "";
+
+  let targetAmount = baseAmount;
+
+  // 4. Do the math using the XP multiplier
+  if (unitType === "Seconds") {
+    targetAmount = baseAmount + (xpMultiplier * 10);
+  } else {
+    targetAmount = baseAmount + (xpMultiplier * 2);
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -177,7 +197,14 @@ function ChallengeScreen() {
           </View>
         </View>
         <View style={styles.center}>
-          <Text style={styles.taskTitle}>{isDone ? "🏆 Completed!!!" : `${exercise?.reps || "20"} ${exercise?.name || "Reps"}`}</Text>
+          
+          {/* THE UPDATED TITLE */}
+          <Text style={styles.taskTitle}>
+            {isDone 
+              ? "🏆 Completed!!!" 
+              : `${targetAmount} ${unitType}${modifierText} of\n${exercise?.name || currentExerciseName}`}
+          </Text>
+
           {!isDone && (
             <TouchableOpacity style={styles.btn} onPress={handleDone}>
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
