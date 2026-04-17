@@ -11,7 +11,7 @@ import { Home, User, Trophy, Flame, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc, arrayUnion, collection, query, orderBy, limit } from "firebase/firestore";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 //EXPO FOR AUDIO
@@ -47,6 +47,7 @@ function AuthScreen() {
   const [password, setPassword] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
 
+  // Function for Login and Sign Up
   const handleAuth = async () => {
     if (!email || !password) { showAlert("Error", "Fill in all fields"); return; }
     try {
@@ -61,17 +62,56 @@ function AuthScreen() {
     } catch (error) { showAlert("Auth Error", error.message); }
   };
 
+  // Function for Reset Password
+  const handleResetPassword = async () => {
+    if (!email) {
+      showAlert("Email Required", "Please type your email address above to receive a reset link.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showAlert("Email Sent", "Check your inbox (and spam) for a link to reset your password.");
+    } catch (error) {
+      showAlert("Reset Error", error.message);
+    }
+  };
+
   return (
     <View style={styles.center}>
       <Text style={styles.heroTitle}>Fitly</Text>
-      <TextInput placeholder="Email" style={styles.input} onChangeText={setEmail} value={email} autoCapitalize="none" />
-      <TextInput placeholder="Password" style={styles.input} secureTextEntry onChangeText={setPassword} value={password} />
+      
+      <TextInput 
+        placeholder="Email" 
+        style={styles.input} 
+        onChangeText={setEmail} 
+        value={email} 
+        autoCapitalize="none" 
+      />
+      
+      <TextInput 
+        placeholder="Password" 
+        style={styles.input} 
+        secureTextEntry 
+        onChangeText={setPassword} 
+        value={password} 
+      />
+
       <TouchableOpacity style={styles.btn} onPress={handleAuth}>
         <Text style={styles.btnText}>{isRegistering ? "Sign Up" : "Login"}</Text>
       </TouchableOpacity>
+
       <TouchableOpacity onPress={() => setIsRegistering(!isRegistering)}>
-        <Text style={styles.toggleText}>{isRegistering ? "Back to Login" : "Create Account"}</Text>
+        <Text style={styles.toggleText}>
+          {isRegistering ? "Back to Login" : "Create Account"}
+        </Text>
       </TouchableOpacity>
+
+      {/* NEW: Reset Password Button */}
+      {!isRegistering && (
+        <TouchableOpacity onPress={handleResetPassword} style={{ marginTop: 20 }}>
+          <Text style={{ color: '#8E8E93', fontWeight: '500' }}>Forgot Password?</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -118,6 +158,7 @@ function ChallengeScreen() {
 
   const handleDone = async () => {
   try {
+    // 1. Ask for Gallery Permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       showAlert("Permission Denied", "We need access to your gallery to upload proof.");
@@ -139,6 +180,7 @@ function ChallengeScreen() {
     const response = await fetch(asset.uri);
     const blob = await response.blob();
     
+    // 4. Upload to Firebase
     const fileRef = ref(storage, `proofs/${userId}/${today.replace(/\//g, '-')}.${fileExtension}`);
     await uploadBytes(fileRef, blob);
     const photoUrl = await getDownloadURL(fileRef);
