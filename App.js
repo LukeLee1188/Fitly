@@ -109,7 +109,7 @@ function AuthScreen() {
       {/* NEW: Reset Password Button */}
       {!isRegistering && (
         <TouchableOpacity onPress={handleResetPassword} style={{ marginTop: 20 }}>
-          <Text style={{ color: '#8E8E93', fontWeight: '500' }}>Forgot Password?</Text>
+          <Text style={{ color: '#7a7a7e', fontWeight: '500' }}>Forgot Password?</Text>
         </TouchableOpacity>
       )}
     </View>
