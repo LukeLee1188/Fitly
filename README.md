@@ -69,6 +69,8 @@ To get started, create an account with a unique email and password. The home scr
 
 3. When opened, tap **Create Account** and register with your email and password.
 
-4. The **Challenge** tab displays the day's exercise. Tap **Submit Proof** to upload. Once complete, you will be directed to a screen that says 'Task Completed', and your streak and XP update automatically.
+4. The **Feed** tab displays your and others' submissions. Scroll through to see other people accomplish the challenge.
 
-5. Visit the **Profile** tab to view or edit your display name, bio, and streak.
+5. The **Challenge** tab displays the day's exercise. Tap **Submit Proof** to upload. Once complete, you will be directed to a screen that says 'Task Completed', and your streak and XP update automatically.
+
+6. Visit the **Profile** tab to view or edit your display name, bio, and streak.
