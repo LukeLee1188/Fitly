@@ -280,7 +280,7 @@ function ChallengeScreen() {
           {}
           <Text style={styles.taskTitle}>
             {isDone 
-              ? "Completed!!!" 
+              ? "🏆 Completed!!!" 
               : `${targetAmount} ${unitType}${modifierText} of\n${exercise?.name || currentExerciseName}`}
           </Text>
 
@@ -370,7 +370,7 @@ function LeaderboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.main}>
-        <Text style={styles.sectionLabel}>Leader Board</Text>
+        <Text style={styles.sectionLabel}>Leaderboard</Text>
         <FlatList
           data={users}
           keyExtractor={item => item.id}
