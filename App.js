@@ -117,13 +117,13 @@ function AuthScreen() {
 }
 
 // --- 2. CHALLENGE SCREEN ---
+// --- 2. CHALLENGE SCREEN ---
 function ChallengeScreen() {
   const [exercise, setExercise] = useState(null);
   const [userData, setUserData] = useState({ history: [], xp: 0, streak: 0 });
   const [loading, setLoading] = useState(true);
   const today = new Date().toLocaleDateString();
   const userId = auth.currentUser?.uid;
-  // Keep track of the current name so we can display it even if Firebase hasn't loaded custom details
   const [currentExerciseName, setCurrentExerciseName] = useState("Pushups");
 
   useEffect(() => {
@@ -150,15 +150,58 @@ function ChallengeScreen() {
     });
 
     const unsubUser = onSnapshot(doc(db, "users", userId), (snap) => {
-      if (snap.exists()) setUserData(snap.data());
+      if (snap.exists()) {
+        const data = snap.data();
+        setUserData(data);
+
+        // --- NEW: THE STREAK BREAKER LOGIC ---
+        if (data.streak > 0 && data.history) {
+          // 1. Calculate the exact dates for Today and Yesterday
+          const todayDate = new Date();
+          const yesterdayDate = new Date();
+          yesterdayDate.setDate(todayDate.getDate() - 1);
+
+          // 2. Format them to match how you save to Firebase (e.g., "4/21/2026")
+          const todayStr = todayDate.toLocaleDateString();
+          const yesterdayStr = yesterdayDate.toLocaleDateString();
+
+          // 3. If neither date is in their history, the streak is dead
+          if (!data.history.includes(todayStr) && !data.history.includes(yesterdayStr)) {
+            
+            // Reset streak to 0 in Firebase
+            setDoc(doc(db, "users", userId), { streak: 0 }, { merge: true });
+            
+            // Show them a heartbreaking alert
+            showAlert("Streak Broken 💔", "You missed a day! Your streak has been reset to 0. Time to start fresh!");
+          }
+        }
+      }
     });
 
     return () => { unsubEx(); unsubUser(); };
   }, [userId]);
 
+  // --- NEW: Audio function for submitting proof ---
+  async function playSuccessSound() {
+    try {
+      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+      const { sound } = await Audio.Sound.createAsync(
+        require('./assets/click.wav') // Tip: You can change this to a 'tada.wav' or 'success.mp3' later!
+      );
+      await sound.playAsync();
+      
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.log("Audio playback failed:", error);
+    }
+  }
+
   const handleDone = async () => {
   try {
-    // 1. Ask for Gallery Permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       showAlert("Permission Denied", "We need access to your gallery to upload proof.");
@@ -180,7 +223,6 @@ function ChallengeScreen() {
     const response = await fetch(asset.uri);
     const blob = await response.blob();
     
-    // 4. Upload to Firebase
     const fileRef = ref(storage, `proofs/${userId}/${today.replace(/\//g, '-')}.${fileExtension}`);
     await uploadBytes(fileRef, blob);
     const photoUrl = await getDownloadURL(fileRef);
@@ -192,6 +234,9 @@ function ChallengeScreen() {
       streak: (userData.streak || 0) + 1,
       lastProofUrl: photoUrl 
     }, { merge: true });
+
+    // --- NEW: Trigger the sound right before the success alert ---
+    playSuccessSound();
 
     showAlert("Success!", "Video proof uploaded and streak updated!");
   } catch (e) {
@@ -206,23 +251,14 @@ function ChallengeScreen() {
 
   const isDone = userData.history?.includes(today);
 
-  // --- PROGRESSIVE OVERLOAD LOGIC (XP BASED) ---
-  // 50 XP per workout means 500 XP = 10 workouts.
-  // Multiplier increases by 1 for every 500 XP earned.
+  // --- PROGRESSIVE OVERLOAD LOGIC ---
   const xpMultiplier = Math.floor((userData.xp || 0) / 500);
-  
-  // 1. Force the Firebase string ("30") into a real math number (30)
   const baseAmount = parseInt(exercise?.amount || 20, 10);
-  
-  // 2. You named the unit field "reps" in Firebase (e.g., "Seconds")
   const unitType = exercise?.reps || "Reps";
-  
-  // 3. Grab the modifier text if it exists
   const modifierText = exercise?.modifier ? ` ${exercise.modifier}` : "";
 
   let targetAmount = baseAmount;
 
-  // 4. Do the math using the XP multiplier
   if (unitType === "Seconds") {
     targetAmount = baseAmount + (xpMultiplier * 10);
   } else {
@@ -240,7 +276,6 @@ function ChallengeScreen() {
         </View>
         <View style={styles.center}>
           
-          {/* THE UPDATED TITLE */}
           <Text style={styles.taskTitle}>
             {isDone 
               ? "🏆 Completed!!!" 
