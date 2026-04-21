@@ -6,6 +6,7 @@ import {
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, User, Trophy, Flame, Camera } from 'lucide-react-native';
+import { Image } from 'react-native';
 
 // FIREBASE ENGINE
 import * as ImagePicker from 'expo-image-picker';
@@ -109,7 +110,7 @@ function AuthScreen() {
       {/* NEW: Reset Password Button */}
       {!isRegistering && (
         <TouchableOpacity onPress={handleResetPassword} style={{ marginTop: 20 }}>
-          <Text style={{ color: '#8E8E93', fontWeight: '500' }}>Forgot Password?</Text>
+          <Text style={{ color: '#7a7a7e', fontWeight: '500' }}>Forgot Password?</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -276,9 +277,10 @@ function ChallengeScreen() {
         </View>
         <View style={styles.center}>
           
+          {}
           <Text style={styles.taskTitle}>
             {isDone 
-              ? "🏆 Completed!!!" 
+              ? "Completed!!!" 
               : `${targetAmount} ${unitType}${modifierText} of\n${exercise?.name || currentExerciseName}`}
           </Text>
 
@@ -296,7 +298,65 @@ function ChallengeScreen() {
   );
 }
 
-// --- 3. LEADERBOARD ---
+// --- 3. Feed ---
+function FeedScreen() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "users"), 
+      orderBy("lastProofUrl"), // Only get users who actually have a photo
+      limit(20)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      const feedData = snap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(user => user.lastProofUrl); // Double check they have a photo
+      
+      setPosts(feedData);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
+
+  if (loading) return <View style={styles.center}><ActivityIndicator size="large" /></View>;
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.main}>
+        <Text style={styles.sectionLabel}>COMMUNITY FEED</Text>
+        <FlatList
+          data={posts}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.feedCard}>
+              <View style={styles.feedHeader}>
+                <Text style={styles.userNameText}>{item.displayName || "Athlete"}</Text>
+                <Text style={styles.feedDate}>{item.streak || 0} Day Streak</Text>
+              </View>
+              
+              <Image 
+                source={{ uri: item.lastProofUrl }} 
+                style={styles.feedImage} 
+                resizeMode="contain"
+              />
+              
+              <View style={styles.feedFooter}>
+                <Text style={styles.feedBio}>{"Just finished the daily challenge!"}</Text>
+              </View>
+            </View>
+          )}
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+
+// --- 4. LEADERBOARD ---
 function LeaderboardScreen() {
   const [users, setUsers] = useState([]);
   
@@ -333,7 +393,7 @@ function LeaderboardScreen() {
   );
 }
 
-// --- 4. PROFILE SCREEN ---
+// --- 5. PROFILE SCREEN ---
 function ProfileScreen() {
   const [userData, setUserData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -395,7 +455,7 @@ function ProfileScreen() {
 }
 
 
-// --- 5. NAVIGATION ---
+// --- 6. NAVIGATION ---
 export default function App() {
   const [user, setUser] = useState(null);
 // 1. This function handles the actual sound playing
@@ -438,6 +498,7 @@ export default function App() {
     <NavigationContainer theme={DefaultTheme}>
       <Tab.Navigator screenOptions={{ headerShown: false, tabBarActiveTintColor: '#007AFF' }}>
         <Tab.Screen name="Challenge" component={ChallengeScreen} options={{ tabBarIcon: ({color}) => <Home color={color} size={24}/> }} />
+        <Tab.Screen name="Feed" component={FeedScreen} options={{ tabBarIcon: ({color}) => <Camera color={color} size={24}/> }} />
         <Tab.Screen name="Leaderboard" component={LeaderboardScreen} options={{ tabBarIcon: ({color}) => <Trophy color={color} size={24}/> }} />
         <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ({color}) => <User color={color} size={24}/> }} />
       </Tab.Navigator>
@@ -445,7 +506,7 @@ export default function App() {
   );
 }
 
-
+// --- 7. Styles---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
@@ -472,5 +533,11 @@ const styles = StyleSheet.create({
   rankText: { fontSize: 18, fontWeight: 'bold', color: '#007AFF', width: 35 },
   userNameText: { fontSize: 16, fontWeight: '600' },
   streakVal: { fontWeight: 'bold', color: '#FF9500', fontSize: 18 },
-  scrollContent: { alignItems: 'center', paddingBottom: 30 }
+  scrollContent: { alignItems: 'center', paddingBottom: 30 },
+  feedCard: { backgroundColor: 'white', borderRadius: 20, marginBottom: 20, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E5EA',},
+  feedHeader: { padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',},
+  feedImage: { width: '100%', height: 300, backgroundColor: '#E5E5EA',},
+  feedFooter: { padding: 15,},
+  feedDate: { fontSize: 12, color: '#FF9500', fontWeight: 'bold',},
+  feedBio: { fontSize: 14, color: '#3A3A3C',},
 });
