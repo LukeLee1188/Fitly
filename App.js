@@ -16,6 +16,8 @@ import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemo
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+
+
 //EXPO FOR AUDIO
 import { Audio } from 'expo-av';
 
@@ -119,7 +121,6 @@ function AuthScreen() {
 }
 
 // --- 2. CHALLENGE SCREEN ---
-// --- 2. CHALLENGE SCREEN ---
 function ChallengeScreen() {
   const [exercise, setExercise] = useState(null);
   const [userData, setUserData] = useState({ history: [], xp: 0, streak: 0 });
@@ -156,25 +157,35 @@ function ChallengeScreen() {
         const data = snap.data();
         setUserData(data);
 
-        // --- NEW: THE STREAK BREAKER LOGIC ---
+        const todayDate = new Date();
+        const todayStr = todayDate.toLocaleDateString();
+
+        // --- 1. THE STREAK BREAKER LOGIC ---
         if (data.streak > 0 && data.history) {
-          // 1. Calculate the exact dates for Today and Yesterday
-          const todayDate = new Date();
           const yesterdayDate = new Date();
           yesterdayDate.setDate(todayDate.getDate() - 1);
-
-          // 2. Format them to match how you save to Firebase (e.g., "4/21/2026")
-          const todayStr = todayDate.toLocaleDateString();
           const yesterdayStr = yesterdayDate.toLocaleDateString();
 
-          // 3. If neither date is in their history, the streak is dead
           if (!data.history.includes(todayStr) && !data.history.includes(yesterdayStr)) {
-            
-            // Reset streak to 0 in Firebase
+            // Reset streak to 0
             setDoc(doc(db, "users", userId), { streak: 0 }, { merge: true });
-            
-            // Show them a heartbreaking alert
             showAlert("Streak Broken 💔", "You missed a day! Your streak has been reset to 0. Time to start fresh!");
+          }
+        }
+
+        // --- 2. THE STORAGE SAVER (Auto-Delete Old Comments) ---
+        if (data.comments && data.comments.length > 0) {
+          // Filter out the old comments, keeping only the ones matching today's date
+          const freshComments = data.comments.filter(comment => {
+            if (!comment.timestamp) return false;
+            const commentDate = new Date(comment.timestamp).toLocaleDateString();
+            return commentDate === todayStr;
+          });
+
+          // If the list of fresh comments is smaller than the total list, 
+          // it means we found old comments! Permanently overwrite Firebase to delete them.
+          if (freshComments.length !== data.comments.length) {
+            updateDoc(doc(db, "users", userId), { comments: freshComments });
           }
         }
       }
@@ -342,21 +353,65 @@ function FeedScreen() {
     }
   };
 
-  // --- NEW: Handle Comments ---
+  
+  // --- NEW: Handle Comments (Strict Block Profanity Filter) ---
   const handleAddComment = async (postUserId) => {
     if (!commentText.trim() || !currentUserId) return;
     
-    const postRef = doc(db, "users", postUserId);
-    await updateDoc(postRef, {
-      comments: arrayUnion({
-        text: commentText,
-        authorId: currentUserId,
-        timestamp: new Date().toISOString()
-      })
+    // These words were found with AI
+    const blockedWords = [
+      "fuck", "fucking", "fucker", "motherfucker", "shit", "shitty", "bullshit", 
+      "bitch", "bitches", "bitching", "ass", "asshole", "asses", "bastard", 
+      "damn", "goddamn", "crap", "piss", "pissed", "dick", "cock", "pussy", 
+      "cunt", "twat", "slut", "whore", "hooker", "douche", "douchebag", "prick", 
+      "wanker", "tosser", "skank", "bimbo", "tramp", "chode", "cuck", "jackass", 
+      "jerkoff", "dipshit", "dumbass", "fatass", "scumbag", "dirtbag", "sleazebag", 
+      "slag", "arsehole", "bugger", "bollocks", "turd", "shite",
+      "faggot", "dyke", "tranny", "nigger", "nigga", "chink", "spic", "kike", 
+      "wetback", "nazi", "pedo", "pedophile",
+      "boobs", "tits", "titties", "penis", "vagina", "porn", "porno", "sex", 
+      "blowjob", "handjob", "cum", "jizz", "masturbate", "dildo", "vibrator", 
+      "horny", "anal", "clit", "cumshot", "ejaculate", "fluffer", "gangbang", 
+      "incest", "knob", "labia", "nympho", "pecker", "rape", "scrote", "semen", 
+      "shag", "smegma", "snatch", "sperm", "testicle", "thot", "upskirt", "vulva", "wank",
+      "stupid", "dumb", "idiot", "moron", "retard", "retarded", "ugly", "fat", 
+      "loser", "freak", "weirdo", "kill", "die", "suicide", "weakling", "fatty", 
+      "obese", "pig", "cow", "anorexic", "twig", "skeleton", "spastic", "schizo"
+    ];
+
+    // 2. The Strict Checker
+    // This checks if ANY word in the array matches the comment text
+    const containsBadWord = blockedWords.some(word => {
+      const regex = new RegExp(`\\b${word}\\b`, "i"); // "i" means case-insensitive
+      return regex.test(commentText);
     });
+
+    // 3. The Block
+    if (containsBadWord) {
+      showAlert("Comment Blocked 🛑", "Please keep the community positive and respectful!");
+      return; // THIS IS THE MAGIC: It immediately kills the function right here.
+    }
+
+    // 4. The Upload (Only runs if the comment passed the test)
+    const postRef = doc(db, "users", postUserId);
     
-    setCommentText("");
-    setActiveCommentId(null); // Close the input box
+    try {
+      await updateDoc(postRef, {
+        comments: arrayUnion({
+          text: commentText, // We can upload the original text because we know it's clean!
+          authorId: currentUserId,
+          timestamp: new Date().toISOString()
+        })
+      });
+      
+      // Clear the input and hide the box
+      setCommentText("");
+      setActiveCommentId(null); 
+      
+    } catch (error) {
+      console.error("Comment failed to post:", error);
+      showAlert("Error", "Could not post your comment. Check your connection.");
+    }
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" /></View>;
