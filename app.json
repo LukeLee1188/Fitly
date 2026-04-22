@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Fitly",
-    "slug": "least-common-multiple",
+    "slug": "fitly-charlie",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./icon.png",
@@ -33,22 +33,23 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lukelee.fitly",
+      "bundleIdentifier": "com.charliec88.fitly",
       "infoPlist": {
         "NSCameraUsageDescription": "Fitly needs camera access to verify your daily workouts."
       }
     },
     "android": {
-      "package": "com.lukelee.fitly",
+      "package": "com.charliec88.fitly",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -57,9 +58,9 @@
     "sdkVersion": "54.0.0",
     "extra": {
       "eas": {
-        "projectId": "52b09a96-62ee-4a22-b98e-b82d693982aa"
+        "projectId": "51271fcf-5fa1-45fd-be7d-694ffcf2f435"
       }
     },
-    "owner": "chickenboi1188"
+    "owner": "charliec88"
   }
 }
