@@ -12,7 +12,7 @@ import { Image } from 'react-native';
 // FIREBASE ENGINE
 import * as ImagePicker from 'expo-image-picker';
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, orderBy, limit } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, limit, addDoc } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -368,26 +368,42 @@ function FeedScreen() {
   };
 
   const handleReport = (postUserId, postName) => {
-    Alert.alert(
-      "Report Content",
-      `Are you sure you want to report the post by ${postName}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Report", style: "destructive",
-          onPress: async () => {
-            try {
-              await addDoc(collection(db, "reports"), {
-                reportedUserId: postUserId, reportedByName: postName,
-                reportedByUserId: currentUserId, timestamp: new Date().toISOString(),
-                status: "Needs Review"
-              });
-              showAlert("Reported", "This content has been flagged for review.");
-            } catch (error) { console.error("Report failed", error); }
-          }
-        }
-      ]
-    );
+    
+    // 1. We wrap the Firebase upload in its own function
+    const submitReport = async () => {
+      try {
+        await addDoc(collection(db, "reports"), {
+          reportedUserId: postUserId, 
+          reportedByName: postName,
+          reportedByUserId: currentUserId, 
+          timestamp: new Date().toISOString(),
+          status: "Needs Review"
+        });
+        showAlert("Reported", "This content has been flagged for review.");
+      } catch (error) { 
+        console.error("Report failed", error); 
+        showAlert("Error", "Could not send the report.");
+      }
+    };
+
+    // 2. We check if you are on the computer (Web) or a Phone (Native)
+    if (Platform.OS === 'web') {
+      // Use the standard web browser popup
+      const userConfirmed = window.confirm(`Are you sure you want to report the post by ${postName}?`);
+      if (userConfirmed) {
+        submitReport();
+      }
+    } else {
+      // Use the fancy iOS/Android popup
+      Alert.alert(
+        "Report Content",
+        `Are you sure you want to report the post by ${postName}?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Report", style: "destructive", onPress: submitReport }
+        ]
+      );
+    }
   };
 
   const handleAddComment = async (postUserId) => {
