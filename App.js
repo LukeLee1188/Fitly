@@ -118,7 +118,6 @@ function AuthScreen() {
 }
 
 // --- 2. CHALLENGE SCREEN ---
-// --- 2. CHALLENGE SCREEN ---
 function ChallengeScreen() {
   const [exercise, setExercise] = useState(null);
   const [userData, setUserData] = useState({ history: [], xp: 0, streak: 0 });
@@ -172,7 +171,7 @@ function ChallengeScreen() {
             // Reset streak to 0 in Firebase
             setDoc(doc(db, "users", userId), { streak: 0 }, { merge: true });
             
-            // Show them a heartbreaking alert
+            // Show them an alert
             showAlert("Streak Broken 💔", "You missed a day! Your streak has been reset to 0. Time to start fresh!");
           }
         }
@@ -182,12 +181,12 @@ function ChallengeScreen() {
     return () => { unsubEx(); unsubUser(); };
   }, [userId]);
 
-  // --- NEW: Audio function for submitting proof ---
+  // Audio function for submitting proof ---
   async function playSuccessSound() {
     try {
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
       const { sound } = await Audio.Sound.createAsync(
-        require('./assets/click.wav') // Tip: You can change this to a 'tada.wav' or 'success.mp3' later!
+        require('./assets/click.wav')
       );
       await sound.playAsync();
       
