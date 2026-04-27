@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, User as UserIcon, Trophy, Flame, Camera, Heart, MessageCircle } from 'lucide-react-native';
+import { Home, User as UserIcon, Trophy, Flame, Camera, Heart, MessageCircle, Flag, Info } from 'lucide-react-native';
 // Note: Changed User to UserIcon to avoid conflicts if you ever create a User variable. Update your Tab.Screen for Profile to use UserIcon!
 import { Image } from 'react-native';
 
@@ -157,36 +157,28 @@ function ChallengeScreen() {
         const data = snap.data();
         setUserData(data);
 
+        // --- THE DAILY SWEEP & STREAK BREAKER ---
         const todayDate = new Date();
         const todayStr = todayDate.toLocaleDateString();
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(todayDate.getDate() - 1);
+        const yesterdayStr = yesterdayDate.toLocaleDateString();
 
-        // --- 1. THE STREAK BREAKER LOGIC ---
+        // 1. Break the streak if they missed yesterday
         if (data.streak > 0 && data.history) {
-          const yesterdayDate = new Date();
-          yesterdayDate.setDate(todayDate.getDate() - 1);
-          const yesterdayStr = yesterdayDate.toLocaleDateString();
-
           if (!data.history.includes(todayStr) && !data.history.includes(yesterdayStr)) {
-            // Reset streak to 0
             setDoc(doc(db, "users", userId), { streak: 0 }, { merge: true });
-            showAlert("Streak Broken 💔", "You missed a day! Your streak has been reset to 0. Time to start fresh!");
+            showAlert("Streak Broken 💔", "You missed a day! Your streak has been reset to 0.");
           }
         }
 
-        // --- 2. THE STORAGE SAVER (Auto-Delete Old Comments) ---
-        if (data.comments && data.comments.length > 0) {
-          // Filter out the old comments, keeping only the ones matching today's date
-          const freshComments = data.comments.filter(comment => {
-            if (!comment.timestamp) return false;
-            const commentDate = new Date(comment.timestamp).toLocaleDateString();
-            return commentDate === todayStr;
+        // 2. The Midnight Sweep: If their last upload wasn't today, wipe their feed data
+        if (data.lastUploadDate !== todayStr && data.lastProofUrl) {
+          updateDoc(doc(db, "users", userId), {
+            lastProofUrl: null, 
+            likes: [],          
+            comments: []        
           });
-
-          // If the list of fresh comments is smaller than the total list, 
-          // it means we found old comments! Permanently overwrite Firebase to delete them.
-          if (freshComments.length !== data.comments.length) {
-            updateDoc(doc(db, "users", userId), { comments: freshComments });
-          }
         }
       }
     });
@@ -194,84 +186,74 @@ function ChallengeScreen() {
     return () => { unsubEx(); unsubUser(); };
   }, [userId]);
 
-  // --- NEW: Audio function for submitting proof ---
   async function playSuccessSound() {
     try {
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-      const { sound } = await Audio.Sound.createAsync(
-        require('./assets/click.wav') // Tip: You can change this to a 'tada.wav' or 'success.mp3' later!
-      );
+      const { sound } = await Audio.Sound.createAsync(require('./assets/click.wav'));
       await sound.playAsync();
-      
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.didJustFinish) {
-          sound.unloadAsync();
-        }
-      });
-    } catch (error) {
-      console.log("Audio playback failed:", error);
-    }
+      sound.setOnPlaybackStatusUpdate((status) => { if (status.didJustFinish) sound.unloadAsync(); });
+    } catch (error) { console.log("Audio failed:", error); }
   }
 
   const handleDone = async () => {
-  try {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      showAlert("Permission Denied", "We need access to your gallery to upload proof.");
-      return;
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        showAlert("Permission Denied", "We need access to your gallery to upload proof.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'], allowsEditing: true, aspect: [1, 1], quality: 0.3,
+      });
+
+      if (result.canceled) return;
+      setLoading(true);
+
+      const asset = result.assets[0];
+      const fileExtension = asset.type === 'video' ? 'mp4' : 'jpg';
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      
+      const fileRef = ref(storage, `proofs/${userId}/${today.replace(/\//g, '-')}.${fileExtension}`);
+      await uploadBytes(fileRef, blob);
+      const photoUrl = await getDownloadURL(fileRef);
+
+      const userRef = doc(db, "users", userId);
+      await setDoc(userRef, { 
+        history: arrayUnion(today),
+        xp: (userData.xp || 0) + 50,
+        streak: (userData.streak || 0) + 1,
+        lastProofUrl: photoUrl,
+        lastUploadDate: today 
+      }, { merge: true });
+
+      playSuccessSound();
+      showAlert("Success!", "Proof uploaded to the community feed!");
+    } catch (e) {
+      console.error(e);
+      showAlert("Error", "Upload failed. Check your internet connection.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'], 
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.3,
-    });
-
-    if (result.canceled) return;
-    setLoading(true);
-
-    const asset = result.assets[0];
-    const fileExtension = asset.type === 'video' ? 'mp4' : 'jpg';
-    const response = await fetch(asset.uri);
-    const blob = await response.blob();
-    
-    const fileRef = ref(storage, `proofs/${userId}/${today.replace(/\//g, '-')}.${fileExtension}`);
-    await uploadBytes(fileRef, blob);
-    const photoUrl = await getDownloadURL(fileRef);
-
-    const userRef = doc(db, "users", userId);
-    await setDoc(userRef, { 
-      history: arrayUnion(today),
-      xp: (userData.xp || 0) + 50,
-      streak: (userData.streak || 0) + 1,
-      lastProofUrl: photoUrl 
-    }, { merge: true });
-
-    // --- NEW: Trigger the sound right before the success alert ---
-    playSuccessSound();
-
-    showAlert("Success!", "Video proof uploaded and streak updated!");
-  } catch (e) {
-    console.error(e);
-    showAlert("Error", "Upload failed. Check your internet connection.");
-  } finally {
-    setLoading(false);
-  }
-};
+  const showAppInfo = () => {
+    showAlert(
+      "How Fitly Works", 
+      "1. Get a quick, 5-minute daily exercise.\n2. Upload a photo/video to prove you did it.\n3. Build your streak and level up!\n\nPrivacy Note: Your uploaded proof is shared on the Community Feed to keep you accountable, but it automatically deletes every day at midnight."
+    );
+  };
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#007AFF" /></View>;
 
   const isDone = userData.history?.includes(today);
-
-  // --- PROGRESSIVE OVERLOAD LOGIC ---
   const xpMultiplier = Math.floor((userData.xp || 0) / 500);
   const baseAmount = parseInt(exercise?.amount || 20, 10);
   const unitType = exercise?.reps || "Reps";
   const modifierText = exercise?.modifier ? ` ${exercise.modifier}` : "";
 
   let targetAmount = baseAmount;
-
   if (unitType === "Seconds") {
     targetAmount = baseAmount + (xpMultiplier * 10);
   } else {
@@ -280,24 +262,37 @@ function ChallengeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.main}>
+      <ScrollView contentContainerStyle={styles.main}>
+        
+        {/* HEADER WITH INFO BUTTON */}
         <View style={styles.headerRow}>
-          <Text style={styles.sectionLabel}>DAILY CHALLENGE</Text>
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <Text style={styles.sectionLabel}>DAILY CHALLENGE</Text>
+            <TouchableOpacity onPress={showAppInfo} style={{marginLeft: 10}}>
+              <Info color="#8E8E93" size={18} />
+            </TouchableOpacity>
+          </View>
           <View style={styles.streakBadge}>
             <Flame color="#FF9500" size={16} /><Text style={styles.streakText}>{userData.streak || 0}</Text>
           </View>
         </View>
+
         <View style={styles.center}>
-          
-          {}
           <Text style={styles.taskTitle}>
             {isDone 
               ? "🏆 Completed!!!" 
               : `${targetAmount} ${unitType}${modifierText} of\n${exercise?.name || currentExerciseName}`}
           </Text>
 
+          {/* NEW: ONLY SHOWS THE IMAGE CARD IF AN IMAGE URL EXISTS IN FIREBASE */}
+          {!isDone && exercise?.imageURL && (
+            <View style={styles.exerciseDetailsCard}>
+              <Image source={{uri: exercise.imageURL}} style={styles.exerciseImage} />
+            </View>
+          )}
+
           {!isDone && (
-            <TouchableOpacity style={styles.btn} onPress={handleDone}>
+            <TouchableOpacity style={[styles.btn, {marginTop: exercise?.imageURL ? 0 : 30}]} onPress={handleDone}>
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <Camera color="white" size={20} style={{marginRight: 10}}/>
                 <Text style={styles.btnText}>Submit Proof</Text>
@@ -305,7 +300,7 @@ function ChallengeScreen() {
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -688,5 +683,7 @@ const styles = StyleSheet.create({
   commentText: { fontSize: 13, color: '#3A3A3C', marginBottom: 4 },
   commentInputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 15, borderTopWidth: 1, borderTopColor: '#E5E5EA', paddingTop: 10 },
   commentInput: { flex: 1, backgroundColor: '#F2F2F7', padding: 10, borderRadius: 10, marginRight: 10 },
-  postCommentBtn: { color: '#007AFF', fontWeight: 'bold' }
+  postCommentBtn: { color: '#007AFF', fontWeight: 'bold' },
+  exerciseDetailsCard: { backgroundColor: 'white', width: '100%', borderRadius: 20, padding: 15, marginBottom: 30, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 },
+  exerciseImage: { width: '100%', height: 250, borderRadius: 15, backgroundColor: '#F2F2F7', resizeMode: 'cover' }
 });
