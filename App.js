@@ -193,9 +193,6 @@ function ChallengeScreen() {
     try {
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
       const { sound } = await Audio.Sound.createAsync(require('./assets/click.wav'));
-      const { sound } = await Audio.Sound.createAsync(
-        require('./assets/click.wav')
-      );
       await sound.playAsync();
       sound.setOnPlaybackStatusUpdate((status) => { if (status.didJustFinish) sound.unloadAsync(); });
     } catch (error) { console.log("Audio failed:", error); }
