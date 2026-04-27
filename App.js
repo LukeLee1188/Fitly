@@ -592,6 +592,11 @@ function ProfileScreen() {
             </TouchableOpacity>
           </View>
         )}
+        <Text style={[styles.disclaimerText, { marginTop: 40, marginLeft: 10, fontSize: 12, color: '#8E8E93' }]}>
+          Disclaimer: This is a demo app for educational purposes only. FITLY provides general exercise suggestions for informational purposes only and does not offer personalized fitness programs or medical advice.
+          By using this app and performing any exercises, you agree that you do so voluntarily and at your own risk. You are responsible for using proper form and ensuring that any activity is appropriate for your fitness level and physical condition.
+          FITLY is not liable for any injuries, damages, or losses that may result from the use of the app or participation in any exercises.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
