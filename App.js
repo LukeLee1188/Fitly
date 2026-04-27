@@ -193,9 +193,6 @@ function ChallengeScreen() {
     try {
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
       const { sound } = await Audio.Sound.createAsync(require('./assets/click.wav'));
-      const { sound } = await Audio.Sound.createAsync(
-        require('./assets/click.wav')
-      );
       await sound.playAsync();
       sound.setOnPlaybackStatusUpdate((status) => { if (status.didJustFinish) sound.unloadAsync(); });
     } catch (error) { console.log("Audio failed:", error); }
@@ -231,7 +228,8 @@ function ChallengeScreen() {
         xp: (userData.xp || 0) + 50,
         streak: (userData.streak || 0) + 1,
         lastProofUrl: photoUrl,
-        lastUploadDate: today 
+        lastUploadDate: today,
+        lastUploadTime: new Date().toISOString() // <-- ADD THIS LINE
       }, { merge: true });
 
       playSuccessSound();
@@ -313,27 +311,43 @@ function ChallengeScreen() {
 
 // --- 3. Feed ---
 // --- 3. Feed ---
+// --- 3. Feed ---
 function FeedScreen() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // States for handling comments
   const [activeCommentId, setActiveCommentId] = useState(null);
   const [commentText, setCommentText] = useState("");
   const currentUserId = auth.currentUser?.uid;
 
+  // --- NEW: Military Time Converter ---
+  const getMilitaryTime = (isoString) => {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
   useEffect(() => {
     const q = query(
       collection(db, "users"), 
-      orderBy("lastProofUrl"), 
-      limit(20)
+      limit(50) // Grab the latest active users
     );
 
     const unsub = onSnapshot(q, (snap) => {
+      const todayStr = new Date().toLocaleDateString();
+
       const feedData = snap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(user => user.lastProofUrl); 
+        .filter(user => {
+          // STRICT FILTER: They MUST have a photo AND it must be from today
+          return user.lastProofUrl && user.lastUploadDate === todayStr;
+        });
       
+      // Sort the feed so the most recent uploads are at the top
+      feedData.sort((a, b) => new Date(b.lastUploadTime || 0) - new Date(a.lastUploadTime || 0));
+
       setPosts(feedData);
       setLoading(false);
     });
@@ -341,78 +355,71 @@ function FeedScreen() {
     return () => unsub();
   }, []);
 
-  // --- NEW: Handle Likes ---
   const handleLike = async (postUserId, currentLikes = []) => {
     if (!currentUserId) return;
     const postRef = doc(db, "users", postUserId);
-    
-    // If they already liked it, remove their ID. Otherwise, add it.
-    if (currentLikes.includes(currentUserId)) {
-      await updateDoc(postRef, { likes: arrayRemove(currentUserId) });
-    } else {
-      await updateDoc(postRef, { likes: arrayUnion(currentUserId) });
-    }
+    try {
+      if (currentLikes.includes(currentUserId)) {
+        await updateDoc(postRef, { likes: arrayRemove(currentUserId) });
+      } else {
+        await updateDoc(postRef, { likes: arrayUnion(currentUserId) });
+      }
+    } catch (error) { console.error("Like failed", error); }
   };
 
-  
-  // --- NEW: Handle Comments (Strict Block Profanity Filter) ---
+  const handleReport = (postUserId, postName) => {
+    Alert.alert(
+      "Report Content",
+      `Are you sure you want to report the post by ${postName}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Report", style: "destructive",
+          onPress: async () => {
+            try {
+              await addDoc(collection(db, "reports"), {
+                reportedUserId: postUserId, reportedByName: postName,
+                reportedByUserId: currentUserId, timestamp: new Date().toISOString(),
+                status: "Needs Review"
+              });
+              showAlert("Reported", "This content has been flagged for review.");
+            } catch (error) { console.error("Report failed", error); }
+          }
+        }
+      ]
+    );
+  };
+
   const handleAddComment = async (postUserId) => {
     if (!commentText.trim() || !currentUserId) return;
     
-    // These words were found with AI
     const blockedWords = [
-      "fuck", "fucking", "fucker", "motherfucker", "shit", "shitty", "bullshit", 
-      "bitch", "bitches", "bitching", "ass", "asshole", "asses", "bastard", 
-      "damn", "goddamn", "crap", "piss", "pissed", "dick", "cock", "pussy", 
-      "cunt", "twat", "slut", "whore", "hooker", "douche", "douchebag", "prick", 
-      "wanker", "tosser", "skank", "bimbo", "tramp", "chode", "cuck", "jackass", 
-      "jerkoff", "dipshit", "dumbass", "fatass", "scumbag", "dirtbag", "sleazebag", 
-      "slag", "arsehole", "bugger", "bollocks", "turd", "shite",
-      "faggot", "dyke", "tranny", "nigger", "nigga", "chink", "spic", "kike", 
-      "wetback", "nazi", "pedo", "pedophile",
-      "boobs", "tits", "titties", "penis", "vagina", "porn", "porno", "sex", 
-      "blowjob", "handjob", "cum", "jizz", "masturbate", "dildo", "vibrator", 
-      "horny", "anal", "clit", "cumshot", "ejaculate", "fluffer", "gangbang", 
-      "incest", "knob", "labia", "nympho", "pecker", "rape", "scrote", "semen", 
-      "shag", "smegma", "snatch", "sperm", "testicle", "thot", "upskirt", "vulva", "wank",
-      "stupid", "dumb", "idiot", "moron", "retard", "retarded", "ugly", "fat", 
-      "loser", "freak", "weirdo", "kill", "die", "suicide", "weakling", "fatty", 
-      "obese", "pig", "cow", "anorexic", "twig", "skeleton", "spastic", "schizo"
+      "fuck", "shit", "bitch", "ass", "damn", "crap", "dick", "pussy", "slut", 
+      "whore", "stupid", "dumb", "idiot", "ugly", "fat", "loser", "freak", "pig"
     ];
 
-    // 2. The Strict Checker
-    // This checks if ANY word in the array matches the comment text
     const containsBadWord = blockedWords.some(word => {
-      const regex = new RegExp(`\\b${word}\\b`, "i"); // "i" means case-insensitive
+      const regex = new RegExp(`\\b${word}\\b`, "i"); 
       return regex.test(commentText);
     });
 
-    // 3. The Block
     if (containsBadWord) {
-      showAlert("Comment Blocked 🛑", "Please keep the community positive and respectful!");
-      return; // THIS IS THE MAGIC: It immediately kills the function right here.
+      showAlert("Comment Blocked 🛑", "Please keep the community positive!");
+      return; 
     }
 
-    // 4. The Upload (Only runs if the comment passed the test)
     const postRef = doc(db, "users", postUserId);
-    
     try {
       await updateDoc(postRef, {
         comments: arrayUnion({
-          text: commentText, // We can upload the original text because we know it's clean!
+          text: commentText,  
           authorId: currentUserId,
           timestamp: new Date().toISOString()
         })
       });
-      
-      // Clear the input and hide the box
       setCommentText("");
       setActiveCommentId(null); 
-      
-    } catch (error) {
-      console.error("Comment failed to post:", error);
-      showAlert("Error", "Could not post your comment. Check your connection.");
-    }
+    } catch (error) { showAlert("Error", "Could not post your comment."); }
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" /></View>;
@@ -434,26 +441,33 @@ function FeedScreen() {
               <View style={styles.feedCard}>
                 <View style={styles.feedHeader}>
                   <Text style={styles.userNameText}>{item.displayName || "Athlete"}</Text>
-                  <Text style={styles.feedDate}>{item.streak || 0} Day Streak</Text>
+                  
+                  {/* --- UPDATED: Showing Streak and Military Time --- */}
+                  <Text style={styles.feedDate}>
+                    {item.streak || 0} Day Streak 
+                    {item.lastUploadTime ? ` • ${getMilitaryTime(item.lastUploadTime)}` : ""}
+                  </Text>
+
                 </View>
                 
-                <Image 
-                  source={{ uri: item.lastProofUrl }} 
-                  style={styles.feedImage} 
-                  resizeMode="cover"
-                />
+                <Image source={{ uri: item.lastProofUrl }} style={styles.feedImage} resizeMode="cover" />
                 
                 <View style={styles.feedFooter}>
-                  {/* --- ACTION BUTTONS --- */}
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.actionBtn} onPress={() => handleLike(item.id, item.likes)}>
-                      <Heart color={hasLiked ? "#FF3B30" : "#3A3A3C"} fill={hasLiked ? "#FF3B30" : "transparent"} size={24} />
-                      <Text style={styles.actionText}>{likeCount}</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity style={styles.actionBtn} onPress={() => setActiveCommentId(activeCommentId === item.id ? null : item.id)}>
-                      <MessageCircle color="#3A3A3C" size={24} />
-                      <Text style={styles.actionText}>{comments.length}</Text>
+                  <View style={[styles.actionRow, {justifyContent: 'space-between'}]}>
+                    <View style={{flexDirection: 'row'}}>
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => handleLike(item.id, item.likes)}>
+                        <Heart color={hasLiked ? "#FF3B30" : "#3A3A3C"} fill={hasLiked ? "#FF3B30" : "transparent"} size={24} />
+                        <Text style={styles.actionText}>{likeCount}</Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => setActiveCommentId(activeCommentId === item.id ? null : item.id)}>
+                        <MessageCircle color="#3A3A3C" size={24} />
+                        <Text style={styles.actionText}>{comments.length}</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity onPress={() => handleReport(item.id, item.displayName)}>
+                      <Flag color="#FF3B30" size={20} />
                     </TouchableOpacity>
                   </View>
 
@@ -462,10 +476,9 @@ function FeedScreen() {
                     {"Just finished the daily challenge!"}
                   </Text>
 
-                  {/* --- COMMENTS SECTION --- */}
                   {comments.length > 0 && (
                     <View style={styles.commentSection}>
-                      {comments.slice(-3).map((comment, index) => ( // Show only latest 3 comments
+                      {comments.slice(-3).map((comment, index) => ( 
                         <Text key={index} style={styles.commentText}>
                            <Text style={{fontWeight: '600'}}>Athlete: </Text>{comment.text}
                         </Text>
@@ -473,15 +486,11 @@ function FeedScreen() {
                     </View>
                   )}
 
-                  {/* --- COMMENT INPUT BOX --- */}
                   {activeCommentId === item.id && (
                     <View style={styles.commentInputRow}>
                       <TextInput 
-                        style={styles.commentInput}
-                        placeholder="Add a comment..."
-                        value={commentText}
-                        onChangeText={setCommentText}
-                        autoFocus
+                        style={styles.commentInput} placeholder="Add a comment..."
+                        value={commentText} onChangeText={setCommentText} autoFocus
                       />
                       <TouchableOpacity onPress={() => handleAddComment(item.id)}>
                         <Text style={styles.postCommentBtn}>Post</Text>
