@@ -168,7 +168,9 @@ function ChallengeScreen() {
         if (data.streak > 0 && data.history) {
           if (!data.history.includes(todayStr) && !data.history.includes(yesterdayStr)) {
             setDoc(doc(db, "users", userId), { streak: 0 }, { merge: true });
-            showAlert("Streak Broken 💔", "You missed a day! Your streak has been reset to 0.");
+            
+            // Show them a heartbreaking alert
+            showAlert("Streak Broken 💔", "You missed a day! Your streak has been reset to 0. Time to start fresh!");
           }
         }
 
@@ -186,10 +188,14 @@ function ChallengeScreen() {
     return () => { unsubEx(); unsubUser(); };
   }, [userId]);
 
+  // Audio function for submitting proof ---
   async function playSuccessSound() {
     try {
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
       const { sound } = await Audio.Sound.createAsync(require('./assets/click.wav'));
+      const { sound } = await Audio.Sound.createAsync(
+        require('./assets/click.wav')
+      );
       await sound.playAsync();
       sound.setOnPlaybackStatusUpdate((status) => { if (status.didJustFinish) sound.unloadAsync(); });
     } catch (error) { console.log("Audio failed:", error); }
@@ -585,6 +591,11 @@ function ProfileScreen() {
             </TouchableOpacity>
           </View>
         )}
+        <Text style={[styles.disclaimerText, { marginTop: 40, marginLeft: 10, fontSize: 12, color: '#8E8E93' }]}>
+          Disclaimer: This is a demo app for educational purposes only. FITLY provides general exercise suggestions for informational purposes only and does not offer personalized fitness programs or medical advice.
+          By using this app and performing any exercises, you agree that you do so voluntarily and at your own risk. You are responsible for using proper form and ensuring that any activity is appropriate for your fitness level and physical condition.
+          FITLY is not liable for any injuries, damages, or losses that may result from the use of the app or participation in any exercises.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
