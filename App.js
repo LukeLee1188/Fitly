@@ -577,7 +577,7 @@ function FeedScreen() {
   );
 }
 
-// 4. LEADERBOARD 
+// 4. Leaderboard
 function LeaderboardScreen() {
   const [users, setUsers] = useState([]);
   
@@ -614,7 +614,7 @@ function LeaderboardScreen() {
   );
 }
 
-// 5. PROFILE SCREEN 
+// 5. Profile Screen
 function ProfileScreen() {
   const [userData, setUserData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -681,7 +681,7 @@ function ProfileScreen() {
 }
 
 
-// 6. NAVIGATION 
+// 6. Navigation 
 export default function App() {
   const [user, setUser] = useState(null);
 // 1. This function handles the actual sound playing
