@@ -1,3 +1,14 @@
+/**
+ * FITLY - Daily Fitness Challenge App
+ *
+ * Sources:
+ * - Exercise list: Adapted from PE programs at 3 local schools
+ * - Firebase (Auth, Firestore, Storage): https://firebase.google.com
+ * - Expo ImagePicker & Audio: https://docs.expo.dev
+ * - React Navigation (bottom tabs): https://reactnavigation.org
+ * - Lucide icons: https://lucide.dev
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Text, View, StyleSheet, TouchableOpacity, TextInput,
@@ -132,6 +143,7 @@ function ChallengeScreen() {
   useEffect(() => {
     if (!userId) return;
 
+    // Source: Exercise list adapted from PE programs at 3 local schools
     const exerciseNames = [
       "Arm Circles", "Burpee", "Buttkick", "Calf Raises", "Crunch", 
       "Deadbugs", "Dips", "Glute Bridge", "High Knees", "Jogging", 
@@ -141,6 +153,7 @@ function ChallengeScreen() {
       "Squats", "Standing March", "Standing On One Leg", "Superman", "Walking"
     ];
 
+    // Picks a different exercise each day based on the day-of-year index
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 0);
     const dayOfYear = Math.floor((now - start) / 86400000);
@@ -157,6 +170,7 @@ function ChallengeScreen() {
         const data = snap.data();
         setUserData(data);
 
+        // Runs on login: resets streak to 0 if the user missed yesterday, and clears feed data if they haven't uploaded today
         // --- THE DAILY SWEEP & STREAK BREAKER ---
         const todayDate = new Date();
         const todayStr = todayDate.toLocaleDateString();
@@ -206,6 +220,7 @@ function ChallengeScreen() {
         return;
       }
 
+      // Note: Only doing photos for now — no videos. mediaTypes includes 'videos' for future use but we only process images.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'], allowsEditing: true, aspect: [1, 1], quality: 0.3,
       });
@@ -252,6 +267,7 @@ function ChallengeScreen() {
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#007AFF" /></View>;
 
   const isDone = userData.history?.includes(today);
+  // XP multiplier increases the target amount every 500 XP earned
   const xpMultiplier = Math.floor((userData.xp || 0) / 500);
   const baseAmount = parseInt(exercise?.amount || 20, 10);
   const unitType = exercise?.reps || "Reps";
@@ -338,7 +354,7 @@ function FeedScreen() {
       const feedData = snap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(user => {
-          // STRICT FILTER: They MUST have a photo AND it must be from today
+          // Only show users who uploaded a proof photo today (feed resets at midnight)
           return user.lastProofUrl && user.lastUploadDate === todayStr;
         });
       
@@ -366,7 +382,7 @@ function FeedScreen() {
 
   const handleReport = (postUserId, postName) => {
     
-    // 1. We wrap the Firebase upload in its own function
+    // Saves a report document to Firestore for manual admin review
     const submitReport = async () => {
       try {
         await addDoc(collection(db, "reports"), {
@@ -406,6 +422,7 @@ function FeedScreen() {
   const handleAddComment = async (postUserId) => {
     if (!commentText.trim() || !currentUserId) return;
     
+    // Basic profanity filter — blocks common offensive words to keep the community positive
     const blockedWords = [
       "fuck", "shit", "bitch", "ass", "damn", "crap", "dick", "pussy", "slut", 
       "whore", "stupid", "dumb", "idiot", "ugly", "fat", "loser", "freak", "pig"
