@@ -17,7 +17,7 @@ import {
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, User as UserIcon, Trophy, Flame, Camera, Heart, MessageCircle, Flag, Info } from 'lucide-react-native';
-// Note: Changed User to UserIcon to avoid conflicts if you ever create a User variable. Update your Tab.Screen for Profile to use UserIcon!
+// Note: Changed User to UserIcon to avoid conflicts if you ever create a User variable.
 import { Image } from 'react-native';
 
 // FIREBASE ENGINE
@@ -41,7 +41,7 @@ const firebaseConfig = {
   appId: "1:889087754267:web:cd090f9fd0ca2e1fec78be"
 };
 
-// Initialize Engines in correct order
+// Initialize Engines
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app); 
@@ -56,7 +56,7 @@ const showAlert = (title, message) => {
   }
 };
 
-// --- 1. AUTHENTICATION ---
+// 1. AUTHENTICATION 
 function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -121,7 +121,7 @@ function AuthScreen() {
         </Text>
       </TouchableOpacity>
 
-      {/* NEW: Reset Password Button */}
+      {/* Reset Password Button */}
       {!isRegistering && (
         <TouchableOpacity onPress={handleResetPassword} style={{ marginTop: 20 }}>
           <Text style={{ color: '#7a7a7e', fontWeight: '500' }}>Forgot Password?</Text>
@@ -131,7 +131,7 @@ function AuthScreen() {
   );
 }
 
-// --- 2. CHALLENGE SCREEN ---
+// 2. CHALLENGE SCREEN
 function ChallengeScreen() {
   const [exercise, setExercise] = useState(null);
   const [userData, setUserData] = useState({ history: [], xp: 0, streak: 0 });
@@ -171,7 +171,7 @@ function ChallengeScreen() {
         setUserData(data);
 
         // Runs on login: resets streak to 0 if the user missed yesterday, and clears feed data if they haven't uploaded today
-        // --- THE DAILY SWEEP & STREAK BREAKER ---
+        // Daily Sweep and Streak Breaker
         const todayDate = new Date();
         const todayStr = todayDate.toLocaleDateString();
         const yesterdayDate = new Date();
@@ -188,7 +188,7 @@ function ChallengeScreen() {
           }
         }
 
-        // 2. The Midnight Sweep: If their last upload wasn't today, wipe their feed data
+        // 2. If their last upload wasn't today, wipe their feed data
         if (data.lastUploadDate !== todayStr && data.lastProofUrl) {
           updateDoc(doc(db, "users", userId), {
             lastProofUrl: null, 
@@ -202,7 +202,7 @@ function ChallengeScreen() {
     return () => { unsubEx(); unsubUser(); };
   }, [userId]);
 
-  // Audio function for submitting proof ---
+  // Audio function for submitting proof
   async function playSuccessSound() {
     try {
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
@@ -220,7 +220,7 @@ function ChallengeScreen() {
         return;
       }
 
-      // Note: Only doing photos for now — no videos. mediaTypes includes 'videos' for future use but we only process images.
+      // Note: Only doing photos for now — no videos. mediaTypes includes 'videos' for future use but only process images.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'], allowsEditing: true, aspect: [1, 1], quality: 0.3,
       });
@@ -325,7 +325,7 @@ function ChallengeScreen() {
   );
 }
 
-// --- 3. Feed ---
+// 3. Feed 
 function FeedScreen() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -354,7 +354,7 @@ function FeedScreen() {
       const feedData = snap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(user => {
-          // Only show users who uploaded a proof photo today (feed resets at midnight)
+          // Only show users who uploaded a proof photo today 
           return user.lastProofUrl && user.lastUploadDate === todayStr;
         });
       
@@ -472,7 +472,7 @@ function FeedScreen() {
                 <View style={styles.feedHeader}>
                   <Text style={styles.userNameText}>{item.displayName || "Athlete"}</Text>
                   
-                  {/* --- UPDATED: Showing Streak and Military Time --- */}
+                  {/* Showing Streak and Military Time at top of post */}
                   <Text style={styles.feedDate}>
                     {item.streak || 0} Day Streak 
                     {item.lastUploadTime ? ` • ${getMilitaryTime(item.lastUploadTime)}` : ""}
@@ -537,7 +537,7 @@ function FeedScreen() {
   );
 }
 
-// --- 4. LEADERBOARD ---
+// 4. LEADERBOARD 
 function LeaderboardScreen() {
   const [users, setUsers] = useState([]);
   
@@ -574,7 +574,7 @@ function LeaderboardScreen() {
   );
 }
 
-// --- 5. PROFILE SCREEN ---
+// 5. PROFILE SCREEN 
 function ProfileScreen() {
   const [userData, setUserData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -641,7 +641,7 @@ function ProfileScreen() {
 }
 
 
-// --- 6. NAVIGATION ---
+// 6. NAVIGATION 
 export default function App() {
   const [user, setUser] = useState(null);
 // 1. This function handles the actual sound playing
@@ -692,7 +692,7 @@ export default function App() {
   );
 }
 
-// --- 7. Styles---
+// 7. Styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
