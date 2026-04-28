@@ -12,7 +12,7 @@ import { Image } from 'react-native';
 // FIREBASE ENGINE
 import * as ImagePicker from 'expo-image-picker';
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, limit, addDoc } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, limit, addDoc, orderBy } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -310,8 +310,6 @@ function ChallengeScreen() {
 }
 
 // --- 3. Feed ---
-// --- 3. Feed ---
-// --- 3. Feed ---
 function FeedScreen() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -320,7 +318,6 @@ function FeedScreen() {
   const [commentText, setCommentText] = useState("");
   const currentUserId = auth.currentUser?.uid;
 
-  // --- NEW: Military Time Converter ---
   const getMilitaryTime = (isoString) => {
     if (!isoString) return "";
     const date = new Date(isoString);
