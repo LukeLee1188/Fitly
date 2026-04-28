@@ -421,34 +421,75 @@ function FeedScreen() {
 
   const handleAddComment = async (postUserId) => {
     if (!commentText.trim() || !currentUserId) return;
-    // Basic profanity filter — blocks common offensive words to keep the community positive
+    // Basic profanity filter — blocks common offensive words. Words were generated through Gemini. Used Regular Expressions to make sure mispellings are also blocked
     const blockedWords = [
-      "fuck", "shit", "bitch", "ass", "damn", "crap", "dick", "pussy", "slut", 
-      "whore", "stupid", "dumb", "idiot", "ugly", "fat", "loser", "freak", "pig"
+      // Standard & Misspellings
+      "fuck", "fck", "fuk", "phuck", "fook", "fucking", "fcker", "mofo", "mutha", 
+      "shit", "shyt", "sh1t", "shitty", "bullshit", "batshit",
+      "bitch", "bish", "b1tch", "biatch", "btch", "bitches",
+      "ass", "a55", "arse", "asshole", "ashole", "asshat", "ahole",
+      "damn", "dammit", "goddamn", "crap", "piss", 
+      
+      // Anatomy & Explicit
+      "dick", "d1ck", "dck", "prick", "cock", "c0ck", "penis", "pecker", "schlong",
+      "pussy", "puss", "pusi", "cunt", "cnt", "twat", "vagina", "clit", "labia",
+      "slut", "slvt", "whore", "hoar", "hoes", "hooker", "skank", "tramp", "bimbo",
+      "cum", "jizz", "semen", "sperm", "masturbate", "wank", "wanker", "toss", "tosser",
+      "sex", "porno", "porn", "xxx", "hentai", "nudes", "boobs", "tits", "titties", "chud", "butthole", "butt", 
+      
+      // Severe / Hate Speech (Bypass variants)
+      "nigger", "nigga", "n1gga", "nigg3r", "nibba", "faggot", "fag", "f4g", "nga", 
+      "dyke", "tranny", "chink", "spic", "beaner", "kike", "nazi", "pedo", "pedophile",
+      
+      // Bullying, Harm & Body Shaming
+      "stupid", "st00pid", "dumm", "dumb", "dumbass", "idiot", "id1ot", "moron", 
+      "retard", "r3tard", "tard", "autistic", "schizo", "spastic",
+      "ugly", "fugly", "fat", "f4t", "fatass", "fatty", "obese", "pig", "cow", "whale", 
+      "anorexic", "twig", "loser", "l0ser", "freak", "weirdo",
+      "kill", "kys", "suicide", "die", "stfu", "gtfo"
     ];
 
+    let normalizedComment = commentText.toLowerCase()
+      .replace(/@/g, 'a')
+      .replace(/\$/g, 's')
+      .replace(/!/g, 'i')
+      .replace(/1/g, 'i')
+      .replace(/0/g, 'o')
+      .replace(/3/g, 'e')
+      .replace(/5/g, 's')
+      .replace(/\*/g, 'u'); // Turns f*ck into fuck
+
+    // 3. The Strict Checker (Checks the normalized text, not the original)
     const containsBadWord = blockedWords.some(word => {
       const regex = new RegExp(`\\b${word}\\b`, "i"); 
-      return regex.test(commentText);
+      return regex.test(normalizedComment); 
     });
 
+    // 4. The Block
     if (containsBadWord) {
-      showAlert("Comment Blocked 🛑", "Please keep the community positive!");
+      showAlert("Comment Blocked 🛑", "Please keep the community positive and respectful!");
       return; 
     }
 
+    // 5. The Upload 
     const postRef = doc(db, "users", postUserId);
+    
     try {
       await updateDoc(postRef, {
         comments: arrayUnion({
-          text: commentText,  
+          text: commentText, // We upload their original formatting so it looks natural!
           authorId: currentUserId,
           timestamp: new Date().toISOString()
         })
       });
+      
       setCommentText("");
       setActiveCommentId(null); 
-    } catch (error) { showAlert("Error", "Could not post your comment."); }
+      
+    } catch (error) {
+      console.error("Comment failed to post:", error);
+      showAlert("Error", "Could not post your comment. Check your connection.");
+    }
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" /></View>;
