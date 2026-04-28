@@ -421,7 +421,7 @@ function FeedScreen() {
 
   const handleAddComment = async (postUserId) => {
     if (!commentText.trim() || !currentUserId) return;
-    
+    // Basic profanity filter — blocks common offensive words to keep the community positive
     const blockedWords = [
       "fuck", "shit", "bitch", "ass", "damn", "crap", "dick", "pussy", "slut", 
       "whore", "stupid", "dumb", "idiot", "ugly", "fat", "loser", "freak", "pig"
