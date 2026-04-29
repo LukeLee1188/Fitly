@@ -729,7 +729,6 @@ const [user, setUser] = useState(null);
     scheduleDailyReminder();
   }, []);
 
-  const [user, setUser] = useState(null);
 // 1. This function handles the actual sound playing
   async function playWelcomeSound() {
     try {
