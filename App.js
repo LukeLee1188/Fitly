@@ -718,10 +718,9 @@ const [user, setUser] = useState(null);
           sound: true,
         },
         trigger: {
-          trigger: {
-          seconds: 10, // Triggers exactly 10 seconds after the app opens
-          repeats: false,
-        },
+          hour: 6,     // 6 AM (Use military time here, e.g., 18 for 6 PM)
+          minute: 0,   // Exactly at the top of the hour
+          repeats: true, // Do this every single day
         },
       });
     }
