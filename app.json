@@ -56,11 +56,11 @@
       "favicon": "./favicon.png"
     },
     "sdkVersion": "54.0.0",
+    "owner": "chickenboi1188",
     "extra": {
       "eas": {
-        "projectId": "51271fcf-5fa1-45fd-be7d-694ffcf2f435"
+        "projectId": "018f71d2-6b91-4043-a922-a677c0cce759"
       }
-    },
-    "owner": "charliec88"
+    }
   }
 }
