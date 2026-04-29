@@ -17,6 +17,7 @@
     "expo-build-properties": "~1.0.10",
     "expo-dev-client": "~6.0.20",
     "expo-image-picker": "~17.0.10",
+    "expo-notifications": "~0.32.17",
     "expo-status-bar": "~3.0.9",
     "firebase": "^12.11.0",
     "lucide-react-native": "0.344.0",

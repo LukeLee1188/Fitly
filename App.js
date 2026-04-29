@@ -56,6 +56,17 @@ const showAlert = (title, message) => {
   }
 };
 
+// Notifications on the app
+import * as Notifications from 'expo-notifications';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 // 1. AUTHENTICATION 
 function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -683,6 +694,41 @@ function ProfileScreen() {
 
 // 6. Navigation 
 export default function App() {
+  
+const [user, setUser] = useState(null);
+
+  // --- NEW: The 6 AM Daily Reminder ---
+  useEffect(() => {
+    async function scheduleDailyReminder() {
+      // 1. Ask the user for permission to send notifications
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        console.log("Notification permission denied!");
+        return;
+      }
+
+      // 2. Clear any old alarms so we don't accidentally spam them with 50 notifications
+      await Notifications.cancelAllScheduledNotificationsAsync();
+
+      // 3. Schedule the repeating 6 AM alert
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Fitly Daily Challenge 🔥",
+          body: "Time to wake up and get your 5-minute workout in! Don't break your streak.",
+          sound: true,
+        },
+        trigger: {
+          trigger: {
+          seconds: 10, // Triggers exactly 10 seconds after the app opens
+          repeats: false,
+        },
+        },
+      });
+    }
+
+    scheduleDailyReminder();
+  }, []);
+
   const [user, setUser] = useState(null);
 // 1. This function handles the actual sound playing
   async function playWelcomeSound() {
