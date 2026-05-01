@@ -4,7 +4,7 @@ Our project, Fitly, is an app aimed to motivate and influence adolescents and yo
 ### Description
 FITLY is a cross-platform mobile fitness app built for teens and young adults who want to build a consistent exercise habit but struggle with motivation and accountability. Rather than overwhelming users with complex programs or endless content choices, FITLY delivers one shared daily exercise challenge to every user at the same time — no fitness knowledge required, no barrier to entry.
 
-To get started, create an account with a unique email and password. The home screen displays the day's challenge, including rep count and a how-to description. Upload a photo or video as proof of completion to automatically mark the task as done, earn XP, and extend your streak. Completed submissions also unlock the community feed, where you can view other users' uploads from that day.
+To get started, create an account with a unique email and password. The home screen displays the day's challenge, including rep count and a how-to description. At 6:00AM, respective to each person's time zone, a notification will be pushed to indicate a new exercise. Upload a photo or video as proof of completion to automatically mark the task as done, earn XP, and extend your streak. Completed submissions also unlock the community feed, where you can view other users' uploads from that day.
 
 **Current Status:** Core challenge delivery, completion tracking, streaks, and XP are fully functional. The community feed is under active development and not yet available in this version.
 
@@ -69,7 +69,7 @@ To get started, create an account with a unique email and password. The home scr
 
 3. When opened, tap **Create Account** and register with your email and password.
 
-4. The **Feed** tab displays your and others' submissions. Scroll through to see other people accomplish the challenge.
+4. The **Feed** tab displays your and others' submissions. Scroll through to see other people accomplish the challenge. Interact with other posts by liking and commenting.
 
 5. The **Challenge** tab displays the day's exercise. Tap **Submit Proof** to upload. Once complete, you will be directed to a screen that says 'Task Completed', and your streak and XP update automatically.
 
