@@ -719,21 +719,6 @@ const [user, setUser] = useState(null);
       await Notifications.cancelAllScheduledNotificationsAsync();
 
       // ── PRODUCTION: fires at 6:00 AM every day ──────────────────────────
-      // await Notifications.scheduleNotificationAsync({
-      //   content: {
-      //     title: "Fitly Daily Challenge 🔥",
-      //     body: "Time to wake up and get your 5-minute workout in! Don't break your streak.",
-      //     sound: true,
-      //   },
-      //   trigger: {
-      //     type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      //     hour: 6,
-      //     minute: 0,
-      //     channelId: 'daily-reminder',
-      //   },
-      // });
-
-      //── TEST: swap the trigger above for this one to verify in 5 seconds ─
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Fitly Daily Challenge 🔥",
@@ -741,12 +726,27 @@ const [user, setUser] = useState(null);
           sound: true,
         },
         trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: 5,
-          repeats: false,
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: 6,
+          minute: 0,
           channelId: 'daily-reminder',
         },
       });
+
+      //── TEST: swap the trigger above for this one to verify in 5 seconds ─
+      // await Notifications.scheduleNotificationAsync({
+      //   content: {
+      //     title: "Fitly Daily Challenge 🔥",
+      //     body: "Time to wake up and get your 5-minute workout in! Don't break your streak.",
+      //     sound: true,
+      //   },
+      //   trigger: {
+      //     type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      //     seconds: 5,
+      //     repeats: false,
+      //     channelId: 'daily-reminder',
+      //   },
+      // });
 
       console.log("Daily 6 AM reminder scheduled!");
     }
