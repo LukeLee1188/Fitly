@@ -17,6 +17,12 @@
     "plugins": [
       "./delete-compression-plugin.js",
       [
+        "expo-notifications",
+        {
+          "color": "#FF6600"
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Allow Fitly to access your gallery to upload workout proof."
@@ -49,7 +55,9 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.SCHEDULE_EXACT_ALARM"
       ]
     },
     "web": {

@@ -697,20 +697,43 @@ export default function App() {
   
 const [user, setUser] = useState(null);
 
-  // --- NEW: The 6 AM Daily Reminder ---
+  // Daily 6 AM Reminder
   useEffect(() => {
     async function scheduleDailyReminder() {
-      // 1. Ask the user for permission to send notifications
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== 'granted') {
         console.log("Notification permission denied!");
         return;
       }
 
-      // 2. Clear any old alarms so we don't accidentally spam them with 50 notifications
+      // Android requires a notification channel before scheduling
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('daily-reminder', {
+          name: 'Daily Reminder',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
+      }
+
       await Notifications.cancelAllScheduledNotificationsAsync();
 
-      // 3. Schedule the repeating 6 AM alert
+      // ── PRODUCTION: fires at 6:00 AM every day ──────────────────────────
+      // await Notifications.scheduleNotificationAsync({
+      //   content: {
+      //     title: "Fitly Daily Challenge 🔥",
+      //     body: "Time to wake up and get your 5-minute workout in! Don't break your streak.",
+      //     sound: true,
+      //   },
+      //   trigger: {
+      //     type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      //     hour: 6,
+      //     minute: 0,
+      //     channelId: 'daily-reminder',
+      //   },
+      // });
+
+      //── TEST: swap the trigger above for this one to verify in 5 seconds ─
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Fitly Daily Challenge 🔥",
@@ -718,11 +741,14 @@ const [user, setUser] = useState(null);
           sound: true,
         },
         trigger: {
-          hour: 6,     // 6 AM (Use military time here, e.g., 18 for 6 PM)
-          minute: 0,   // Exactly at the top of the hour
-          repeats: true, // Do this every single day
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: 5,
+          repeats: false,
+          channelId: 'daily-reminder',
         },
       });
+
+      console.log("Daily 6 AM reminder scheduled!");
     }
 
     scheduleDailyReminder();
