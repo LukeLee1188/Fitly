@@ -17,7 +17,6 @@ import {
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, User as UserIcon, Trophy, Flame, Camera, Heart, MessageCircle, Flag, Info } from 'lucide-react-native';
-// Note: Changed User to UserIcon to avoid conflicts if you ever create a User variable.
 import { Image } from 'react-native';
 
 // Firebase imports
@@ -154,7 +153,7 @@ function ChallengeScreen() {
   useEffect(() => {
     if (!userId) return;
 
-    // Source: Exercise list adapted from PE programs at 3 local schools
+    // Source: Exercise list adapted from PE programs
     const exerciseNames = [
       "Arm Circles", "Burpee", "Buttkick", "Calf Raises", "Crunch", 
       "Deadbugs", "Dips", "Glute Bridge", "High Knees", "Jogging", 
@@ -181,7 +180,7 @@ function ChallengeScreen() {
         const data = snap.data();
         setUserData(data);
 
-        // Runs on login: resets streak to 0 if the user missed yesterday, and clears feed data if they haven't uploaded today
+        // Runs on login: resets streak to 0 if the user missed yesterday and clears feed data if they haven't uploaded today
         // Daily Sweep and Streak Breaker
         const todayDate = new Date();
         const todayStr = todayDate.toLocaleDateString();
@@ -255,7 +254,7 @@ function ChallengeScreen() {
         streak: (userData.streak || 0) + 1,
         lastProofUrl: photoUrl,
         lastUploadDate: today,
-        lastUploadTime: new Date().toISOString() // <-- ADD THIS LINE
+        lastUploadTime: new Date().toISOString()
       }, { merge: true });
 
       playSuccessSound();
@@ -410,7 +409,7 @@ function FeedScreen() {
       }
     };
 
-    // 2. We check if you are on the computer (Web) or a Phone (Native)
+    // 2. Check if you are on the computer (Web) or a Phone (Native)
     if (Platform.OS === 'web') {
       // Use the standard web browser popup
       const userConfirmed = window.confirm(`Are you sure you want to report the post by ${postName}?`);
@@ -418,7 +417,7 @@ function FeedScreen() {
         submitReport();
       }
     } else {
-      // Use the fancy iOS/Android popup
+      // Use the iOS/Android popup
       Alert.alert(
         "Report Content",
         `Are you sure you want to report the post by ${postName}?`,
@@ -468,9 +467,9 @@ function FeedScreen() {
       .replace(/0/g, 'o')
       .replace(/3/g, 'e')
       .replace(/5/g, 's')
-      .replace(/\*/g, 'u'); // Turns f*ck into fuck
+      .replace(/\*/g, 'u');
 
-    // 3. The Strict Checker (Checks the normalized text, not the original)
+    // 3. Check the normalized text
     const containsBadWord = blockedWords.some(word => {
       const regex = new RegExp(`\\b${word}\\b`, "i"); 
       return regex.test(normalizedComment); 
@@ -733,7 +732,7 @@ const [user, setUser] = useState(null);
         },
       });
 
-      // Test: swap the trigger above for this one to fire in 5 seconds instead
+      // Test: swaps the trigger above for this one to fire in 5 seconds instead
       // await Notifications.scheduleNotificationAsync({
       //   content: {
       //     title: "Fitly Daily Challenge 🔥",
