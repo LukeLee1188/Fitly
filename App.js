@@ -20,7 +20,7 @@ import { Home, User as UserIcon, Trophy, Flame, Camera, Heart, MessageCircle, Fl
 // Note: Changed User to UserIcon to avoid conflicts if you ever create a User variable.
 import { Image } from 'react-native';
 
-// FIREBASE ENGINE
+// Firebase imports
 import * as ImagePicker from 'expo-image-picker';
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, limit, addDoc, orderBy } from "firebase/firestore";
@@ -29,7 +29,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 
 
-//EXPO FOR AUDIO
+// Expo audio
 import { Audio } from 'expo-av';
 
 const firebaseConfig = {
@@ -67,7 +67,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// 1. AUTHENTICATION 
+// 1. Authentication
 function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -142,7 +142,7 @@ function AuthScreen() {
   );
 }
 
-// 2. CHALLENGE SCREEN
+// 2. Challenge screen
 function ChallengeScreen() {
   const [exercise, setExercise] = useState(null);
   const [userData, setUserData] = useState({ history: [], xp: 0, streak: 0 });
@@ -231,7 +231,7 @@ function ChallengeScreen() {
         return;
       }
 
-      // Note: Only doing photos for now — no videos. mediaTypes includes 'videos' for future use but only process images.
+      // Note: Only doing photos for now, no videos. mediaTypes includes 'videos' for future use but we only process images.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'], allowsEditing: true, aspect: [1, 1], quality: 0.3,
       });
@@ -295,7 +295,7 @@ function ChallengeScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.main}>
         
-        {/* HEADER WITH INFO BUTTON */}
+        {/* Header with info button */}
         <View style={styles.headerRow}>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
             <Text style={styles.sectionLabel}>DAILY CHALLENGE</Text>
@@ -315,7 +315,7 @@ function ChallengeScreen() {
               : `${targetAmount} ${unitType}${modifierText} of\n${exercise?.name || currentExerciseName}`}
           </Text>
 
-          {/* NEW: ONLY SHOWS THE IMAGE CARD IF AN IMAGE URL EXISTS IN FIREBASE */}
+          {/* Only shows the image card if a url exists in Firebase */}
           {!isDone && exercise?.imageURL && (
             <View style={styles.exerciseDetailsCard}>
               <Image source={{uri: exercise.imageURL}} style={styles.exerciseImage} />
@@ -432,7 +432,7 @@ function FeedScreen() {
 
   const handleAddComment = async (postUserId) => {
     if (!commentText.trim() || !currentUserId) return;
-    // Basic profanity filter — blocks common offensive words. Words were generated through Gemini. Used Regular Expressions to make sure mispellings are also blocked
+    // Basic profanity filter. Words were generated through Gemini. Uses regex to catch common misspellings too.
     const blockedWords = [
       // Standard & Misspellings
       "fuck", "fck", "fuk", "phuck", "fook", "fucking", "fcker", "mofo", "mutha", 
@@ -718,7 +718,7 @@ const [user, setUser] = useState(null);
 
       await Notifications.cancelAllScheduledNotificationsAsync();
 
-      // ── PRODUCTION: fires at 6:00 AM every day ──────────────────────────
+      // Production: fires at 6:00 AM every day
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Fitly Daily Challenge 🔥",
@@ -733,7 +733,7 @@ const [user, setUser] = useState(null);
         },
       });
 
-      //── TEST: swap the trigger above for this one to verify in 5 seconds ─
+      // Test: swap the trigger above for this one to fire in 5 seconds instead
       // await Notifications.scheduleNotificationAsync({
       //   content: {
       //     title: "Fitly Daily Challenge 🔥",

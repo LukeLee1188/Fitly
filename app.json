@@ -4,7 +4,7 @@
     "slug": "fitly-charlie",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./icon.png",
+    "icon": "./favicon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./splash.png",
@@ -48,7 +48,7 @@
       "package": "com.charliec88.fitly",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./icon.png",
+        "foregroundImage": "./favicon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -61,7 +61,7 @@
       ]
     },
     "web": {
-      "favicon": "./favicon.png"
+      "favicon": "./icon.png"
     },
     "sdkVersion": "54.0.0",
     "owner": "taper8021",
