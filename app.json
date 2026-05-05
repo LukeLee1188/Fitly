@@ -64,11 +64,6 @@
       "favicon": "./icon.png"
     },
     "sdkVersion": "54.0.0",
-    "owner": "chickenboi1188",
-    "extra": {
-      "eas": {
-        "projectId": "1344bfd1-d361-4deb-b986-2e5ae7e83b4e"
-      }
-    }
+    "owner": "chickenboi1188"
   }
 }
