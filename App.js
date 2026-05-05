@@ -7,6 +7,7 @@
  * - Expo ImagePicker & Audio: https://docs.expo.dev
  * - React Navigation (bottom tabs): https://reactnavigation.org
  * - Lucide icons: https://lucide.dev
+ * - Autofills from VS Code
  */
 
 import React, { useState, useEffect } from 'react';
