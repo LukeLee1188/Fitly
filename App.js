@@ -29,9 +29,9 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 
 // Expo audio
-import { Audio } from 'expo-av';
+import { Audio } from 'expo-av'; //audio from freesound.org
 
-const firebaseConfig = {
+const firebaseConfig = { //taken from firebase
   apiKey: "AIzaSyA6NYMuK3mUsSq2lqdDbQe-wXs-JADflLk",
   authDomain: "least-common-multiple.firebaseapp.com",
   projectId: "least-common-multiple",
@@ -66,7 +66,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// 1. Authentication
+// 1. Authentication (Firebase helped with this)
 function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -294,7 +294,7 @@ function ChallengeScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.main}>
         
-        {/* Header with info button */}
+        {/* Header */}
         <View style={styles.headerRow}>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
             <Text style={styles.sectionLabel}>DAILY CHALLENGE</Text>
@@ -680,7 +680,7 @@ function ProfileScreen() {
             </TouchableOpacity>
           </View>
         )}
-        <Text style={[styles.disclaimerText, { marginTop: 40, marginLeft: 10, fontSize: 12, color: '#8E8E93' }]}>
+        <Text style={[styles.disclaimerText, { marginTop: 40, marginLeft: 10, fontSize: 12, color: '#8E8E93' }]}> //disclaimer  based off of the default one
           Disclaimer: This is a demo app for educational purposes only. FITLY provides general exercise suggestions for informational purposes only and does not offer personalized fitness programs or medical advice.
           By using this app and performing any exercises, you agree that you do so voluntarily and at your own risk. You are responsible for using proper form and ensuring that any activity is appropriate for your fitness level and physical condition.
           FITLY is not liable for any injuries, damages, or losses that may result from the use of the app or participation in any exercises.
@@ -706,6 +706,7 @@ const [user, setUser] = useState(null);
       }
 
       // Android requires a notification channel before scheduling
+      //https://reactnativerelay.com/article/react-native-push-notifications-expo-complete-guide-2026
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('daily-reminder', {
           name: 'Daily Reminder',
@@ -757,6 +758,7 @@ const [user, setUser] = useState(null);
   async function playWelcomeSound() {
     try {
       // Ensure the audio mode allows playing
+      //https://docs.expo.dev/versions/latest/sdk/audio/
       await Audio.setAudioModeAsync({
         playsInSilentModeIOS: true, // This allows sound even if the ringer is off
       });
@@ -802,6 +804,7 @@ const [user, setUser] = useState(null);
 }
 
 // 7. Styles
+    //https://reactnative.dev/docs/style
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
