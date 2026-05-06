@@ -61,7 +61,7 @@
       ]
     },
     "web": {
-      "favicon": "./icon.png"
+      "favicon": "./favicon.png"
     },
     "sdkVersion": "54.0.0",
     "owner": "chickenboi1188",
