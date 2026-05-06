@@ -311,7 +311,7 @@ function ChallengeScreen() {
         <View style={styles.center}>
           <Text style={styles.taskTitle}>
             {isDone 
-              ? "🏆 Completed!!!" 
+              ? "🏆 Completed!!!\nTime for a water break" 
               : `${targetAmount} ${unitType}${modifierText} of\n${exercise?.name || currentExerciseName}`}
           </Text>
 
