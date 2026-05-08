@@ -89,7 +89,7 @@ function AuthScreen() {
     } catch (error) { showAlert("Auth Error", error.message); }
   };
 
-  // Function for Reset Password
+  // Function for Reset Password. Gemini Query: can you create a reset password setting that can send an email to their accounts with the help of firebase?
   const handleResetPassword = async () => {
     if (!email) {
       showAlert("Email Required", "Please type your email address above to receive a reset link.");
