@@ -393,7 +393,7 @@ function FeedScreen() {
       }
     } catch (error) { console.error("Like failed", error); }
   };
-
+//Report feature created with help of gemini. Query: Gemini, how would you write a feature that can allow a user to report another used by citing both their user ids and that add it to a document called "reports" in firestore.
   const handleReport = (postUserId, postName) => {
     
     // Saves a report document to Firestore for manual admin review
