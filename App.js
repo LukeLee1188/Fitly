@@ -3,7 +3,7 @@
  *
  * Sources:
  * - Exercise list: Adapted from PE programs at 3 local schools
- * - Firebase (Auth, Firestore, Storage): https://firebase.google.com
+ * - Firebase (Auth, Firestore, Storage): https://firebase.google.com and https://www.bing.com/videos/riverview/relatedvideo?q=everything+to+know+about+firebase+firestore+and+more&&mid=7085145FC0FD451626F37085145FC0FD451626F3&churl=https%3a%2f%2fwww.youtube.com%2fchannel%2fUClIsr3lZUUSSn88W4cO_iIA&FORM=VRDGAR
  * - Expo ImagePicker & Audio: https://docs.expo.dev
  * - React Navigation (bottom tabs): https://reactnavigation.org
  * - Lucide icons: https://lucide.dev
@@ -21,6 +21,7 @@ import { Home, User as UserIcon, Trophy, Flame, Camera, Heart, MessageCircle, Fl
 import { Image } from 'react-native';
 
 // Firebase imports
+
 import * as ImagePicker from 'expo-image-picker';
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, limit, addDoc, orderBy } from "firebase/firestore";
@@ -32,7 +33,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 // Expo audio
 import { Audio } from 'expo-av'; //audio from freesound.org
 
-const firebaseConfig = { //taken from firebase
+const firebaseConfig = { //taken from firebase repositotory
   apiKey: "AIzaSyA6NYMuK3mUsSq2lqdDbQe-wXs-JADflLk",
   authDomain: "least-common-multiple.firebaseapp.com",
   projectId: "least-common-multiple",
@@ -56,7 +57,7 @@ const showAlert = (title, message) => {
   }
 };
 
-// Notifications on the app
+// Notifications on the app https://www.bing.com/videos/riverview/relatedvideo?q=how+to+do+notifiications+with+react+and+expo+notifications&&mid=4D6D78A529B8C6D222B94D6D78A529B8C6D222B9&churl=https%3a%2f%2fwww.youtube.com%2fchannel%2fUC-HmboDI-u5W3MBvygbtvaA&FORM=VRDGAR
 import * as Notifications from 'expo-notifications';
 
 Notifications.setNotificationHandler({
@@ -194,7 +195,7 @@ function ChallengeScreen() {
           if (!data.history.includes(todayStr) && !data.history.includes(yesterdayStr)) {
             setDoc(doc(db, "users", userId), { streak: 0 }, { merge: true });
             
-            // Show them a heartbreaking alert
+            // Show them an alert
             showAlert("Streak Broken 💔", "You missed a day! Your streak has been reset to 0. Time to start fresh!");
           }
         }
@@ -214,6 +215,7 @@ function ChallengeScreen() {
   }, [userId]);
 
   // Audio function for submitting proof
+  // https://www.bing.com/videos/riverview/relatedvideo?q=audio+using+react&&mid=9C1BF4EE7D2471B0487C9C1BF4EE7D2471B0487C&churl=https%3a%2f%2fwww.youtube.com%2fchannel%2fUC18oah_ydLjqeCkAxNBNXXA&FORM=VRDGAR
   async function playSuccessSound() {
     try {
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
@@ -231,7 +233,7 @@ function ChallengeScreen() {
         return;
       }
 
-      // Note: Only doing photos for now, no videos. mediaTypes includes 'videos' for future use but we only process images.
+      // Note: Only doing photos for now, no videos. mediaTypes includes 'videos' for future use, but we only process images.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'], allowsEditing: true, aspect: [1, 1], quality: 0.3,
       });
@@ -311,11 +313,11 @@ function ChallengeScreen() {
         <View style={styles.center}>
           <Text style={styles.taskTitle}>
             {isDone 
-              ? "🏆 Completed!!!\nTime for a water break" 
+              ? "🏆 Completed!!!\nTime for a water break." 
               : `${targetAmount} ${unitType}${modifierText} of\n${exercise?.name || currentExerciseName}`}
           </Text>
 
-          {/* Only shows the image card if a url exists in Firebase */}
+          {/* Only shows the image card if a URL exists in Firebase */}
           {!isDone && exercise?.imageURL && (
             <View style={styles.exerciseDetailsCard}>
               <Image source={{uri: exercise.imageURL}} style={styles.exerciseImage} />
@@ -337,6 +339,7 @@ function ChallengeScreen() {
 }
 
 // 3. Feed 
+//https://www.bing.com/videos/riverview/relatedvideo?q=how+to+make+instagram+like+posts+with+react+native&&mid=BB82CF5B56A1CE45E818BB82CF5B56A1CE45E818&churl=https%3a%2f%2fwww.youtube.com%2fchannel%2fUC8butISFwT-Wl7EV0hUK0BQ&FORM=VRDGAR
 function FeedScreen() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -432,7 +435,7 @@ function FeedScreen() {
 
   const handleAddComment = async (postUserId) => {
     if (!commentText.trim() || !currentUserId) return;
-    // Basic profanity filter. Words were generated through Gemini. Uses regex to catch common misspellings too.
+    // Basic profanity filter. Words were generated through Gemini. Uses regex to catch common misspellings too. Query: Can you help me create a list of words that would be inappropriate to appear on an exercise app as well as common mispellings/abbreviations?
     const blockedWords = [
       // Standard & Misspellings
       "fuck", "fck", "fuk", "phuck", "fook", "fucking", "fcker", "mofo", "mutha", 
@@ -481,7 +484,7 @@ function FeedScreen() {
       showAlert("Comment Blocked 🛑", "Please keep the community positive and respectful!");
       return; 
     }
-
+    //end of code from gemini
     // 5. The Upload 
     const postRef = doc(db, "users", postUserId);
     
@@ -792,7 +795,7 @@ const [user, setUser] = useState(null);
 
   if (!user) return <AuthScreen />;
 
-  return (
+  return (//https://reactnavigation.org/docs/navigation-container/
     <NavigationContainer theme={DefaultTheme}>
       <Tab.Navigator screenOptions={{ headerShown: false, tabBarActiveTintColor: '#007AFF' }}>
         <Tab.Screen name="Challenge" component={ChallengeScreen} options={{ tabBarIcon: ({color}) => <Home color={color} size={24}/> }} />
